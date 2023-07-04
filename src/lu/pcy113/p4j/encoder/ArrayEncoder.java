@@ -29,7 +29,7 @@ public class ArrayEncoder implements Encoder<Object[]> {
         ByteBuffer bb = ByteBuffer.allocate(out.size() + 4 + (head ? 2 : 0) + 2);
         if(head)
             bb.putShort(header);
-        bb.putInt(out.size());
+        bb.putInt(obj.length);
         bb.putShort(elementEncoder.header());
         bb.put(out.toByteArray());
         return bb;

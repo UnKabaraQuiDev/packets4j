@@ -57,7 +57,7 @@ public class MapEncoder implements Encoder<Map<?, ?>> {
         ByteBuffer bb = ByteBuffer.allocate(out.size() + 4 + (head ? 2 : 0) + 4);
         if(head)
             bb.putShort(header);
-        bb.putInt(out.size());
+        bb.putInt(obj.size());
         bb.putShort(keyEncoder.header());
         bb.putShort(valuEncoder.header());
         bb.put(out.toByteArray());
