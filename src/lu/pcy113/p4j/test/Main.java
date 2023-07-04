@@ -1,15 +1,23 @@
 package lu.pcy113.p4j.test;
 
-import lu.pcy113.p4j.decoder.*;
-import lu.pcy113.p4j.encoder.*;
 import java.nio.ByteBuffer;
+
+import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.p4j.util.ArrayUtils;
 
 public class Main {
     
     public static void main(String args[]) {
-        ByteBuffer bb = new DoubleEncoder().encode(true, 5.92);
+    	
+    	CodecManager cm = CodecManager.base();
+    	
+    	ByteBuffer bb = cm.encode(new String[] {"a", "ab", "ac", "ad", "ae", "af"});
         bb.flip();
-        System.out.println(new DoubleDecoder().decode(true, bb));
+        System.out.println(ArrayUtils.byteArrayToHexString(bb.array()));
+        for(Object o : (Object[]) cm.decode(bb)) {
+        	System.out.println(o);
+        }
+    
     }
 
 }

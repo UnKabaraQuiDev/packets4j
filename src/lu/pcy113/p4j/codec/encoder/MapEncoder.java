@@ -1,21 +1,32 @@
 package lu.pcy113.p4j.codec.encoder;
 
-import java.io.ByteArrayOutputStream;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
+
+import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.p4j.util.ArrayUtils;
 
 public class MapEncoder implements Encoder<Map<?, ?>> {
 
-    public CodecManager cm;
+    public CodecManager cm = null;
     public short header;
-
-    public short header() {
-        return header;
-    }
+    
+    public CodecManager codecManager() {return cm;}
+    public short header() {return header;}
+    public Class<?> type() {return Map.class;}
+    
     public String register(CodecManager cm, short header) {
+    	verifyRegister();
+    	
         this.cm = cm;
         this.header = header;
+        
+        return type().getName();
     }
 
     /**
@@ -26,7 +37,7 @@ public class MapEncoder implements Encoder<Map<?, ?>> {
      * - DATA           xb
      */
     public ByteBuffer encode(boolean head, Map<?, ?> obj) {
-        Class<?> key, value;
+        Class<?> key = null, value = null;
         Type[] interfaces = obj.getClass().getGenericInterfaces();
         for (Type type : interfaces) {
             if (type instanceof ParameterizedType) {
@@ -46,21 +57,21 @@ public class MapEncoder implements Encoder<Map<?, ?>> {
         if(value == null)
             throw new IllegalArgumentException("Value type of map cannot be null");
 
-        Encoder<?> keyEncoder = cm.getEncoder(key.getName());
-        Encoder<?> valueEncoder = cm.getEncoder(key.getName());
+        Encoder keyEncoder = cm.getEncoder(key.getName());
+        Encoder valueEncoder = cm.getEncoder(key.getName());
 
-        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        List<Byte> elements = new ArrayList<>();
         for(Entry<?, ?> o : obj.entrySet()) {
-            out.write(keyEncoder.encode(false, o.getKey()));
-            out.write(valueEncoder.encoder(false, o.getValue()));
+        	elements.addAll(ArrayUtils.byteArrayToList(keyEncoder.encode(false, o.getKey()).array()));
+        	elements.addAll(ArrayUtils.byteArrayToList(valueEncoder.encode(false, o.getValue()).array()));
         }
-        ByteBuffer bb = ByteBuffer.allocate(out.size() + 4 + (head ? 2 : 0) + 4);
+        ByteBuffer bb = ByteBuffer.allocate(obj.size() + 4 + (head ? 2 : 0) + 4);
         if(head)
             bb.putShort(header);
         bb.putInt(obj.size());
         bb.putShort(keyEncoder.header());
-        bb.putShort(valuEncoder.header());
-        bb.put(out.toByteArray());
+        bb.putShort(valueEncoder.header());
+        bb.put(ArrayUtils.byteListToPrimitive(elements));
         return bb;
     }
 

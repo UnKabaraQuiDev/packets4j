@@ -1,36 +1,39 @@
 package lu.pcy113.p4j.codec.decoder;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
-public class MapDecoder implements Decoder<Map<?, ?>> {
+import lu.pcy113.p4j.codec.CodecManager;
 
-    private CodecManager cm;
+public class ArrayDecoder implements Decoder<Object[]> {
+
+    private CodecManager cm = null;
     private short header;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Array.class;}
+    public Class<?> type() {return null;}
     
     public String register(CodecManager cm, short header) {
-        super.register(cm, header);
-
+    	verifyRegister();
+    	
         this.cm = cm;
         this.header = header;
+        
+        return "Array"; //type().getName();
     }
 
     public Object[] decode(boolean head, ByteBuffer bb) {
         if(head) {
             short nheader = bb.getShort();
             if(nheader != header)
-                decoderNotCompatible(nheader, header);
+            	Decoder.decoderNotCompatible(nheader, header);
         }
 
         int length = bb.getInt();
-        int elementHeader = bb.getShort();
+        short elementHeader = bb.getShort();
 
         Decoder<?> elementDecoder = cm.getDecoder(elementHeader);
-        Object[] array = new elementDecoder.type()[length];
+        Object[] array = new Object[length];
         for(int i = 0; i < length; i++) {
             array[i] = elementDecoder.decode(false, bb);
         }
