@@ -1,9 +1,9 @@
-package lu.pcy113.p4j.encoder;
+package lu.pcy113.p4j.codec.encoder;
 
-import java.lang.Character;
+import java.lang.Short;
 import java.nio.ByteBuffer;
 
-public class CharEncoder implements Encoder<Character> {
+public class ShortEncoder implements Encoder<Short> {
 
     public CodecManager cm;
     public short header;
@@ -13,11 +13,11 @@ public class CharEncoder implements Encoder<Character> {
         this.header = header;
     }
 
-    public ByteBuffer encode(boolean head, chat obj) {
-        ByteBuffer bb = ByteBuffer.allocate(obj.length() + 4 + (head ? 2 : 0));
+    public ByteBuffer encode(boolean head, short obj) {
+        ByteBuffer bb = ByteBuffer.allocate(2 + (head ? 2 : 0));
         if(head)
             bb.putShort(header);
-        bb.putChar(obj);
+        bb.putShort(obj);
         return bb;
     }
 

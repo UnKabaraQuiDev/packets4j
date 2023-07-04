@@ -1,4 +1,4 @@
-package lu.pcy113.p4j.decoder;
+package lu.pcy113.p4j.codec.decoder;
 
 import java.nio.ByteBuffer;
 import java.util.List;

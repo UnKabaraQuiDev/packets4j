@@ -1,16 +1,16 @@
-package lu.pcy113.p4j.decoder;
+package lu.pcy113.p4j.codec.decoder;
 
-import java.lang.String;
+import java.lang.Short;
 import java.nio.ByteBuffer;
 
-public class StringDecoder implements Decoder<String> {
+public class ShortDecoder implements Decoder<Short> {
     
     private CodecManager cm;
     private short header = -1;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return String.class;}
+    public Class<?> type() {return Short.class;}
     
     public String register(CodecManager cm, short header) {
         super.register(cm, header);
@@ -19,15 +19,14 @@ public class StringDecoder implements Decoder<String> {
         this.header = header;
     }
 
-    public String decode(boolean head, ByteBuffer bb) {
+    public byte decode(boolean head, ByteBuffer bb) {
         if(head) {
             short nheader = bb.getShort();
             if(nheader != header)
                 decoderNotCompatible(nheader, header);
         }
 
-        int length = bb.getInt();
-        return new String(bb.get(new byte[length]));
+        return bb.getShort();
     }
 
 }

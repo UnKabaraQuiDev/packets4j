@@ -1,9 +1,9 @@
-package lu.pcy113.p4j.encoder;
+package lu.pcy113.p4j.codec.encoder;
 
-import java.lang.Integer;
+import java.lang.Float;
 import java.nio.ByteBuffer;
 
-public class IntegerEncoder implements Encoder<Integer> {
+public class FloatEncoder implements Encoder<Float> {
 
     public CodecManager cm;
     public short header;
@@ -13,11 +13,11 @@ public class IntegerEncoder implements Encoder<Integer> {
         this.header = header;
     }
 
-    public ByteBuffer encode(boolean head, int obj) {
-        ByteBuffer bb = ByteBuffer.allocate(4 + (head ? 2 : 0));
+    public ByteBuffer encode(boolean head, float obj) {
+        ByteBuffer bb = ByteBuffer.allocate(8 + (head ? 2 : 0));
         if(head)
             bb.putShort(header);
-        bb.putInt(obj);
+        bb.putDouble(obj);
         return bb;
     }
 
