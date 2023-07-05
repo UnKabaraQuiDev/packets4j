@@ -67,6 +67,8 @@ public class P4JClient extends Thread implements P4JInstance {
 	            return;
 	
 	        int length = bb.getInt();
+	        bb.clear();
+	        
 	        ByteBuffer content = ByteBuffer.allocate(length);
 	        if(clientSocketChannel.read(content) != length)
 	            return;
@@ -97,13 +99,13 @@ public class P4JClient extends Thread implements P4JInstance {
 	        Object obj = packet.clientWrite(this);
 	        ByteBuffer content = codec.encode(obj);
 	        content = encryption.encrypt(content);
-	        content.flip();
 	
 	        ByteBuffer bb = ByteBuffer.allocate(4+4+content.capacity());
 	        bb.putInt(content.limit() + 4); // Add id length
 	        bb.putInt(packets.getId(packet.getClass()));
 	        bb.put(content);
 	        bb.flip();
+	        
 	        System.out.println(ArrayUtils.byteArrayToHexString(bb.array()));
 	        
 	        clientSocketChannel.write(bb);

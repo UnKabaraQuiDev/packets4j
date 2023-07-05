@@ -31,11 +31,11 @@ public class ServerClient {
 	        
 	        bb.flip();
 	        int length = bb.getInt();
-	        System.out.println("length: "+length);
+	        bb.clear();
+	        
 	        ByteBuffer content = ByteBuffer.allocate(length);
 	        if(socketChannel.read(content) != length)
 	            return;
-	        bb.clear();
 	        
 	        content.flip();
 	        int id = content.getInt();
