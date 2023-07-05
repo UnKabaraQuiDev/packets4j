@@ -36,15 +36,17 @@
 - [ ] compress
 	- [ ] CompressionManager
 	- [ ] compressor
-		- [ ] Compressor
-		- [ ] RawCompressor
+		- [x] Compressor
+		- [x] RawCompressor
 		- [ ] ZstdCompressor
 		- [ ] LZOCompressor
+		- [x] SnappyCompressor
 	- [ ] decompressor
-		- [ ] Decompressor
-		- [ ] RawDecompressor
+		- [x] Decompressor
+		- [x] RawDecompressor
 		- [ ] ZstdDecompressor
 		- [ ] LZODecompressor
+		- [x] SnappyDecompressor
 - [x] packets
 	- [x] PacketManager
 	- [x] Packet
