@@ -27,6 +27,8 @@ public class FloatEncoder implements Encoder<Float> {
         if(head)
             bb.putShort(header);
         bb.putDouble(obj);
+        
+        bb.flip();
         return bb;
     }
 

@@ -27,6 +27,8 @@ public class ShortEncoder implements Encoder<Short> {
         if(head)
             bb.putShort(header);
         bb.putShort(obj);
+        
+        bb.flip();
         return bb;
     }
 

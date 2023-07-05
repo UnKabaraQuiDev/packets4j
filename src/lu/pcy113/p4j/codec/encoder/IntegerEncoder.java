@@ -27,6 +27,8 @@ public class IntegerEncoder implements Encoder<Integer> {
         if(head)
             bb.putShort(header);
         bb.putInt(obj);
+        
+        bb.flip();
         return bb;
     }
 

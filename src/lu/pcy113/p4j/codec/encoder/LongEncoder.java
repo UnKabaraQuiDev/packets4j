@@ -27,6 +27,8 @@ public class LongEncoder implements Encoder<Long> {
         if(head)
             bb.putShort(header);
         bb.putLong(obj);
+        
+        bb.flip();
         return bb;
     }
 	

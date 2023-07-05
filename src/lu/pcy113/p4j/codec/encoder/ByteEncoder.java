@@ -27,6 +27,8 @@ public class ByteEncoder implements Encoder<Byte> {
         if(head)
             bb.putShort(header);
         bb.put(obj);
+        
+        bb.flip();
         return bb;
     }
 

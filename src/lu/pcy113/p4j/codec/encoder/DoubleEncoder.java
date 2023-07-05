@@ -27,6 +27,8 @@ public class DoubleEncoder implements Encoder<Double> {
         if(head)
             bb.putShort(header);
         bb.putDouble(obj);
+        
+        bb.flip();
         return bb;
     }
 

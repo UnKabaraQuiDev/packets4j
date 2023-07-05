@@ -28,6 +28,8 @@ public class StringEncoder implements Encoder<String> {
             bb.putShort(header);
         bb.putInt(obj.length());
         bb.put(obj.getBytes());
+        
+        bb.flip();
         return bb;
     }
 

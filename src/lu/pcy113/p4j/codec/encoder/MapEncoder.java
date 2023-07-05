@@ -72,6 +72,8 @@ public class MapEncoder implements Encoder<Map<?, ?>> {
         bb.putShort(keyEncoder.header());
         bb.putShort(valueEncoder.header());
         bb.put(ArrayUtils.byteListToPrimitive(elements));
+        
+        bb.flip();
         return bb;
     }
 

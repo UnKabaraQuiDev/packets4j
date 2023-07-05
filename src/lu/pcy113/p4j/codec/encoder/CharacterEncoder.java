@@ -27,6 +27,8 @@ public class CharacterEncoder implements Encoder<Character> {
         if(head)
             bb.putShort(header);
         bb.putChar(obj);
+        
+        bb.flip();
         return bb;
     }
 

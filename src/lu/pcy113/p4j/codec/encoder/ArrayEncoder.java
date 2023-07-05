@@ -48,6 +48,8 @@ public class ArrayEncoder implements Encoder<Object[]> {
         bb.putInt(obj.length);
         bb.putShort(elementEncoder.header());
         bb.put(ArrayUtils.byteListToPrimitive(elements));
+        
+        bb.flip();
         return bb;
     }
 
