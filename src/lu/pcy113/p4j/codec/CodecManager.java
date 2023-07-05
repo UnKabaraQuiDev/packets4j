@@ -4,26 +4,8 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import lu.pcy113.p4j.codec.decoder.ArrayDecoder;
-import lu.pcy113.p4j.codec.decoder.ByteDecoder;
-import lu.pcy113.p4j.codec.decoder.CharacterDecoder;
-import lu.pcy113.p4j.codec.decoder.Decoder;
-import lu.pcy113.p4j.codec.decoder.DoubleDecoder;
-import lu.pcy113.p4j.codec.decoder.FloatDecoder;
-import lu.pcy113.p4j.codec.decoder.IntegerDecoder;
-import lu.pcy113.p4j.codec.decoder.MapDecoder;
-import lu.pcy113.p4j.codec.decoder.ShortDecoder;
-import lu.pcy113.p4j.codec.decoder.StringDecoder;
-import lu.pcy113.p4j.codec.encoder.ArrayEncoder;
-import lu.pcy113.p4j.codec.encoder.ByteEncoder;
-import lu.pcy113.p4j.codec.encoder.CharacterEncoder;
-import lu.pcy113.p4j.codec.encoder.DoubleEncoder;
-import lu.pcy113.p4j.codec.encoder.Encoder;
-import lu.pcy113.p4j.codec.encoder.FloatEncoder;
-import lu.pcy113.p4j.codec.encoder.IntegerEncoder;
-import lu.pcy113.p4j.codec.encoder.MapEncoder;
-import lu.pcy113.p4j.codec.encoder.ShortEncoder;
-import lu.pcy113.p4j.codec.encoder.StringEncoder;
+import lu.pcy113.p4j.codec.decoder.*;
+import lu.pcy113.p4j.codec.encoder.*;
 import lu.pcy113.p4j.util.Pair;
 
 public class CodecManager {
