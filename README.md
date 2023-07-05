@@ -1,1 +1,64 @@
 # packets4j
+
+- [x] Codec
+	- [x] CodecManager
+	- [x] encoder
+		- [x] Encoder<T>
+		- [x] StringEncoder
+		- [x] DoubleEncoder
+		- [x] FloatEncoder
+		- [x] IntegerEncoder
+		- [x] CharacterEncoder
+		- [x] MapEncoder
+		- [x] ArrayEncoder
+		- [x] ShortEncoder
+		- [x] LongEncoder
+	- [x] decoder
+		- [x] Decoder<T>
+		- [x] StringDecoder
+		- [x] DoubleDecoder
+		- [x] FloatDecoder
+		- [x] IntegerDecoder
+		- [x] CharacterDecoder
+		- [x] MapDecoder
+		- [x] ArrayDecoder
+		- [x] ShortDecoder
+		- [x] LongDecoder
+- [x] crypt
+	- [x] EncryptionManager
+	- [x] encryptor
+		- [x] Encryptor
+		- [x] RawEncryptor
+		- [x] AESEncryptor
+	- [x] decryptor
+		- [x] RawDecryptor
+		- [x] AESDecryptor
+- [ ] compress
+	- [ ] CompressionManager
+	- [ ] compressor
+		- [ ] Compressor
+		- [ ] RawCompressor
+		- [ ] ZstdCompressor
+		- [ ] LZOCompressor
+	- [ ] decompressor
+		- [ ] Decompressor
+		- [ ] RawDecompressor
+		- [ ] ZstdDecompressor
+		- [ ] LZODecompressor
+- [x] packets
+	- [x] PacketManager
+	- [x] Packet
+	- [x] s2c
+		- [x] S2CPacket
+	- [x] c2s
+		- [x] C2SPacket
+- [x] socket
+	- [x] P4JInstance
+	- [x] client
+		- [x] P4JClient
+		- [x] ClientServer
+		- [x] ClientStatus
+	- [x] server
+		- [x] P4JServer
+		- [x] ServerClient
+		- [x] ServerStatus
