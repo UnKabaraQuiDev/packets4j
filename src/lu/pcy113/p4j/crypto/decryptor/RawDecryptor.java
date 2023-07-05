@@ -1,5 +1,7 @@
 package lu.pcy113.p4j.crypto.decryptor;
 
+import java.nio.ByteBuffer;
+
 public class RawDecryptor implements Decryptor {
 
     @Override
