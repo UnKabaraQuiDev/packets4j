@@ -16,12 +16,12 @@ public class ServerClient {
     public void read() {
         ByteBuffer bb = ByteBuffer.allocate(4);
         if(socketChannel.read(bb) != 4)
-            return;
+            continue;
         
         int length = bb.getInt();
         ByteBuffer content = ByteBuffer.allocate(length);
         if(socketChannel.read(content, length) != length)
-            return;
+            continue;
         bb.clear();
         int id = content.getInt();
 

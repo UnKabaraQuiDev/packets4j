@@ -15,7 +15,7 @@ public class P4JServer extends Thread {
     private EncryptionManager encryption;
     private PacketManager packets;
 
-    private ServerStatus serverStatus;
+    private ServerStatus serverStatus = ServerStatus.PRE;
 
     private ServerSocketChannel serverSocketChannel;
     private Selector serverSocketSelector;
@@ -30,6 +30,7 @@ public class P4JServer extends Thread {
         serverSocketChannel.socket().bind(ia, port);
         serverSocketChannel.configureBlocking(false);
         serverSocketChannel.register(serverSocketSelector, SelectionKey.OP_ACCEPT);
+        serverStatus = ServerStatus.OPEN;
     }
 
     public void run() {
