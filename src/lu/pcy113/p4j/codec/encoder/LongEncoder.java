@@ -4,14 +4,14 @@ import java.nio.ByteBuffer;
 
 import lu.pcy113.p4j.codec.CodecManager;
 
-public class CharacterEncoder implements Encoder<Character> {
+public class LongEncoder implements Encoder<Long> {
 
-    public CodecManager cm;
+	public CodecManager cm;
     public short header;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Character.class;}
+    public Class<?> type() {return Long.class;}
     
     public String register(CodecManager cm, short header) {
     	verifyRegister();
@@ -22,12 +22,12 @@ public class CharacterEncoder implements Encoder<Character> {
         return type().getName();
     }
 
-    public ByteBuffer encode(boolean head, Character obj) {
-        ByteBuffer bb = ByteBuffer.allocate(1 + (head ? 2 : 0));
+    public ByteBuffer encode(boolean head, Long obj) {
+        ByteBuffer bb = ByteBuffer.allocate(8 + (head ? 2 : 0));
         if(head)
             bb.putShort(header);
-        bb.putChar(obj);
+        bb.putLong(obj);
         return bb;
     }
-
+	
 }

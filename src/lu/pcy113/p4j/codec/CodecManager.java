@@ -31,16 +31,22 @@ public class CodecManager {
         return registeredEncoders.get(name).getKey();
     }
     public Encoder getEncoder(Object clazz) {
-        if(registeredEncoders.containsKey(clazz.getClass().getName()))
-        	return registeredEncoders.get(clazz.getClass().getName()).getKey();
+    	String name = clazz.getClass().getName().replace("^class\\s", "");
+        if(registeredEncoders.containsKey(name))
+        	return registeredEncoders.get(name).getKey();
+        
         for(Entry<String, Pair<Encoder, Short>> e : registeredEncoders.entrySet())
         	if(e.getValue().getKey().confirmType(clazz))
         		return e.getValue().getKey();
+        
         return null;
     }
     
     public ByteBuffer encode(Object o) {
-    	return getEncoder(o).encode(true, o);
+    	Encoder e = getEncoder(o);
+    	if(e == null)
+    		throw new EncoderNotFoundException("Encoder for: "+o.getClass()+"; not registered in CodecManager.");
+    	return e.encode(true, o);
     }
     public Object decode(ByteBuffer bb) {
     	return getDecoder(bb.getShort()).decode(false, bb);
@@ -54,10 +60,11 @@ public class CodecManager {
     	cm.register(new IntegerEncoder(), new IntegerDecoder(), (short) 3);
     	cm.register(new DoubleEncoder(), new DoubleDecoder(), (short) 4);
     	cm.register(new FloatEncoder(), new FloatDecoder(), (short) 5);
-    	cm.register(new CharacterEncoder(), new CharacterDecoder(), (short) 6);
-    	cm.register(new StringEncoder(), new StringDecoder(), (short) 7);
-    	cm.register(new ArrayEncoder(), new ArrayDecoder(), (short) 8);
-    	cm.register(new MapEncoder(), new MapDecoder(), (short) 9);
+    	cm.register(new LongEncoder(), new LongDecoder(), (short) 6);
+    	cm.register(new CharacterEncoder(), new CharacterDecoder(), (short) 7);
+    	cm.register(new StringEncoder(), new StringDecoder(), (short) 8);
+    	cm.register(new ArrayEncoder(), new ArrayDecoder(), (short) 9);
+    	cm.register(new MapEncoder(), new MapDecoder(), (short) 10);
     	
     	return cm;
     }
