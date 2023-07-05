@@ -9,8 +9,11 @@ import src.lu.pcy113.p4j.codec.CodecManager;
 
 public class P4JServer extends Thread {
 
+    private HashMap<UUID, ServerClient> clients = new HashMap<>();
+
     private CodecManager codec;
     private EncryptionManager encryption;
+    private PacketManager packets;
 
     private ServerStatus serverStatus;
 
@@ -48,34 +51,34 @@ public class P4JServer extends Thread {
                         // Register the client socket channel with the selector for reading
                         clientChannel.register(selector, SelectionKey.OP_READ);
 
+                        clientConnected(clientChannel);
+
                         System.out.println("New client connected: " + clientChannel.getRemoteAddress());
                     } else if (key.isReadable()) {
                         // Read data from a client socket channel
                         SocketChannel clientChannel = (SocketChannel) key.channel();
-                        ByteBuffer buffer = ByteBuffer.allocate(BUFFER_SIZE);
-                        int bytesRead = clientChannel.read(buffer);
-
-                        if (bytesRead == -1) {
-                            // Connection closed by client
-                            clientChannel.close();
-                            key.cancel();
-                            System.out.println("Client disconnected: " + clientChannel.getRemoteAddress());
-                        } else if (bytesRead > 0) {
-                            // Process the received data
-                            buffer.flip();
-                            byte[] data = new byte[buffer.limit()];
-                            buffer.get(data);
-                            String message = new String(data);
-                            System.out.println("Received from client: " + message);
-
-                            // TODO: Handle the received data as per your application's logic
-                        }
+                        clientChannel.attachment().read();
                     }
 
                     keyIterator.remove();
+                }
         }
     }
 
+    public void clientConnection(SocketChannel sc) {
+        ServerClient sclient = new ServerClient(sc, this);
+        registerClient(sclient);
+    }
+    public void registerClient(ServerClient sclient) {
+        sclient.getSocketChannel().attach(sclient);
+        clients.put(sclient.getUUID(), sclient);
+    }
+
+    public void broadcast(S2CPacket packet) {
+        for(ServerClient sc : clients) {
+            sc.write(packet);
+        }
+    }
     public void kickClients(String msg, boolean force) {
 
     }
@@ -98,6 +101,14 @@ public class P4JServer extends Thread {
         if(!super.isAlive())
             super.start();
     }
+
     public ServerStatus getServerStatus() {return serverStatus;}
+
+    public CodecManager getCodec() {return codec;}
+    public EncryptionManager getEncryption() {return encryption;}
+    public PacketManager getPackets() {return packets;}
+    public void setCodec(CodecManager codec) {this.codec = codec;}
+    public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
+    public void setPackets(PacketManager packets) {this.packets = packets;}
 
 }
