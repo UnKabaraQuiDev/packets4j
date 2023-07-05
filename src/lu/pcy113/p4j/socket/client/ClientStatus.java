@@ -5,6 +5,7 @@ public enum ClientStatus {
     PRE(),
     OPEN(),
     LISTENING(),
+    CLOSING(),
     CLOSED(),
     ERROR();
 
