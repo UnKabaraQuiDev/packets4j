@@ -7,7 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-public class AESEncryptor {
+public class AESEncryptor implements Encryptor {
     private static final String ALGORITHM = "AES";
 
     private SecretKeySpec secretKey;
@@ -18,6 +18,7 @@ public class AESEncryptor {
         cipher = Cipher.getInstance(ALGORITHM);
     }
 
+    @Override
     public ByteBuffer encrypt(ByteBuffer buffer) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         cipher.init(Cipher.ENCRYPT_MODE, secretKey);
         byte[] encryptedBytes = cipher.doFinal(buffer.array(), buffer.position(), buffer.remaining());

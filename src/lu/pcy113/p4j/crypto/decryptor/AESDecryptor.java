@@ -7,7 +7,7 @@ import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Arrays;
 
-public class SymmetricEncryption {
+public class AESDecryptor implements Decryptor {
     private static final String ALGORITHM = "AES";
 
     private SecretKeySpec secretKey;
@@ -18,6 +18,7 @@ public class SymmetricEncryption {
         cipher = Cipher.getInstance(ALGORITHM);
     }
 
+    @Override
     public ByteBuffer decrypt(ByteBuffer buffer) throws IllegalBlockSizeException, BadPaddingException, InvalidKeyException {
         cipher.init(Cipher.DECRYPT_MODE, secretKey);
         byte[] decryptedBytes = cipher.doFinal(buffer.array(), buffer.position(), buffer.remaining());
