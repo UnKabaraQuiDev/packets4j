@@ -12,12 +12,11 @@ public class PingPongPacket implements C2SPacket<Long>, S2CPacket<Long> {
 	@Override
 	public Long clientWrite(P4JClient client) {
 		long x = System.currentTimeMillis();
-		System.out.println("ClientWrite: "+x);
 		return x;
 	}
 	@Override
 	public void serverRead(ServerClient sclient, Long obj) {
-		System.out.println("ServerRead: "+obj);
+		System.out.println("server read");
 		sclient.write(new PingPongPacket(obj));
 	}
 	
@@ -25,19 +24,16 @@ public class PingPongPacket implements C2SPacket<Long>, S2CPacket<Long> {
 	private long current;
 	public PingPongPacket(long l) {
 		current = l;
-		System.out.println("Current read: "+l);
 	}
 	
 	@Override
 	public void clientRead(P4JClient client, Long obj) {
-		System.out.println("ClientRead: "+obj);
+		System.out.println("client read");
 	}
 	
 	@Override
 	public Long serverWrite(ServerClient client) {
 		long x = System.currentTimeMillis() - current;
-		System.out.println("Current: "+System.currentTimeMillis());
-		System.out.println("ServerWrite: "+x);
 		return x;
 	}
 	

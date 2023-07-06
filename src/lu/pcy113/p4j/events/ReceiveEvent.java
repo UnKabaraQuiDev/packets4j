@@ -1,17 +1,13 @@
-package lu.pcy113.p4j.socket.listeners.events;
+package lu.pcy113.p4j.events;
 
-import java.util.Map;
-import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.p4j.packets.Packet;
 import lu.pcy113.p4j.util.Cancellable;
-import java.util.HashMap;
 
-public class ReceiveEvent<T extends P4JInstance> implements Event, Cancellable {
+public class ReceiveEvent<T> implements Event, Cancellable {
     
     private T receiver;
     private Packet packet;
     private boolean cancelled = false;
-    private Map<Object, Boolean> callerClasses = new HashMap<>();
 
     public ReceiveEvent(T rec, Packet p) {
         this.receiver = rec;
@@ -25,23 +21,18 @@ public class ReceiveEvent<T extends P4JInstance> implements Event, Cancellable {
     public Packet getPacket() {
         return packet;
     }
-    public P4JInstance getReceiver() {
+    public T getReceiver() {
         return receiver;
     }
     public void setPacket(Packet packet) {
         this.packet = packet;
     }
-    public void setReceiver(P4JInstance receiver) {
+    public void setReceiver(T receiver) {
         this.receiver = receiver;
     }
     @Override
     public void setCancelled(boolean cancelled) {
-        callerClasses.put(Reflection.getCallerClass(1), cancelled);
         this.cancelled = cancelled;
-    }
-    @Override
-    public Map<Object, Boolean> getCallerClasses() {
-        return callerClasses;
     }
 
 }

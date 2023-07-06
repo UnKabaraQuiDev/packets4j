@@ -11,22 +11,25 @@ import java.util.Iterator;
 import java.util.Set;
 
 import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.handler.EventHandler;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.compress.CompressionManager;
 
 public class P4JServer extends Thread implements P4JInstance {
 
+	private ServerStatus serverStatus = ServerStatus.PRE;
+	
+    private EventHandler eventHandler = new EventHandler(false);
+	
 	private HashMap<SocketChannel, ServerClient> clients = new HashMap<>();
 
     private CodecManager codec;
     private EncryptionManager encryption;
     private CompressionManager compression;
     private PacketManager packets = new PacketManager(this);
-
-    private ServerStatus serverStatus = ServerStatus.PRE;
 
     private InetSocketAddress localInetSocketAddress;
     
@@ -140,6 +143,7 @@ public class P4JServer extends Thread implements P4JInstance {
     }
 
     public ServerStatus getServerStatus() {return serverStatus;}
+    public EventHandler getEventHandler() {return eventHandler;}
     public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
 
     public CodecManager getCodec() {return codec;}

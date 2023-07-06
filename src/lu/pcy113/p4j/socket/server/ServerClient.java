@@ -1,11 +1,12 @@
 package lu.pcy113.p4j.socket.server;
 
 import java.io.IOException;
-import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
+import lu.pcy113.p4j.events.ReceiveEvent;
+import lu.pcy113.p4j.events.TransmitEvent;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 
@@ -47,18 +48,27 @@ public class ServerClient {
     }
     protected void read_handleRawPacket(int id, ByteBuffer content) {
     	try {
-			content = server.getCompression().compress(content);
+			content = server.getCompression().decompress(content);
 	        content = server.getEncryption().decrypt(content);
 	        Object obj = server.getCodec().decode(content);
 	        
 	        C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 	        packet.serverRead(this, obj);
+	        
+	        server.getEventHandler().appendEvent(new ReceiveEvent<ServerClient>(this, packet));
     	}catch(Exception e) {
     		handleException("read_handleRawPacket", e);
     	}
     }
     public boolean write(S2CPacket packet) {
     	try {
+    		System.out.println("sclient write packet"+packet);
+    		
+    		TransmitEvent<ServerClient> te = new TransmitEvent<>(this, packet);
+    		server.getEventHandler().handleEvent(te);
+            if(te.isCancelled())
+                return false;
+    		
 	    	ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 	    	content = server.getEncryption().encrypt(content);
 	        content = server.getCompression().compress(content);

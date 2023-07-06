@@ -8,22 +8,23 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SocketChannel;
 
 import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.ReceiveEvent;
+import lu.pcy113.p4j.events.TransmitEvent;
+import lu.pcy113.p4j.events.handler.EventHandler;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.socket.listeners.events.TransmitEvent;
-import lu.pcy113.p4j.socket.listeners.events.handler.ClientEventHandler;
 import lu.pcy113.p4j.socket.server.P4JServerException;
 import lu.pcy113.p4j.util.ArrayUtils;
-import lu.pcy113.p4j.compress.CompressionManager;
 
 public class P4JClient extends Thread implements P4JInstance {
 
     private ClientStatus clientStatus = ClientStatus.PRE;
 
-    private ClientEventHandler clientEventHandler = new ClientEventHandler();
+    private EventHandler eventHandler = new EventHandler(false);
 
     private CodecManager codec;
     private EncryptionManager encryption;
@@ -72,14 +73,16 @@ public class P4JClient extends Thread implements P4JInstance {
 	        ByteBuffer bb = ByteBuffer.allocate(4);
 	        if(clientSocketChannel.read(bb) != 4)
 	            return;
-	
+	        
+	        bb.flip();
 	        int length = bb.getInt();
 	        bb.clear();
 	        
 	        ByteBuffer content = ByteBuffer.allocate(length);
 	        if(clientSocketChannel.read(content) != length)
 	            return;
-	        
+
+	        content.flip();
 	        int id = content.getInt();
 	
 	        read_handleRawPacket(id, content);
@@ -98,7 +101,7 @@ public class P4JClient extends Thread implements P4JInstance {
 	        S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 	        packet.clientRead(this, obj);
 
-            clientEventHandler.appendReceive(new ReceiveEvent<P4JClient>(this, Packet));
+            eventHandler.appendEvent(new ReceiveEvent<P4JClient>(this, packet));
 	    }catch(Exception e) {
 			handleException("read_handleRawPacket", e);
 		}
@@ -108,16 +111,14 @@ public class P4JClient extends Thread implements P4JInstance {
     	try {
 	        Object obj = packet.clientWrite(this);
 
-            TransmitEvent<P4JInstance> te = new TransmitEvent<P4JClient>(this, packet);
-            clientEventHandler.handleEvent(te);
-            if(te.isCancelled()) {
-                logger.info("Packet "+packet+", cancelled by: "+te.getCallerClasses().entrySet().stream().sorted(Maps.reverseOrder()).anyMatch((s) -> s.getValue() == true)).get();
-                return;
-            }
+            TransmitEvent<P4JClient> te = new TransmitEvent<>(this, packet);
+            eventHandler.handleEvent(te);
+            if(te.isCancelled())
+                return false;
 
 	        ByteBuffer content = codec.encode(obj);
-            content = compression.compress(content);
 	        content = encryption.encrypt(content);
+            content = compression.compress(content);
 	
 	        ByteBuffer bb = ByteBuffer.allocate(4+4+content.capacity());
 	        bb.putInt(content.limit() + 4); // Add id length
@@ -156,6 +157,7 @@ public class P4JClient extends Thread implements P4JInstance {
     }
     
     public ClientStatus getClientStatus() {return clientStatus;}
+    public EventHandler getEventHandler() {return eventHandler;}
     public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
     public ClientServer getClientServer() {return clientServer;}
 
