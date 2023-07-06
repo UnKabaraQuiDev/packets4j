@@ -15,6 +15,7 @@ import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.p4j.compress.CompressionManager;
 
 public class P4JServer extends Thread implements P4JInstance {
 
@@ -22,6 +23,7 @@ public class P4JServer extends Thread implements P4JInstance {
 
     private CodecManager codec;
     private EncryptionManager encryption;
+    private CompressionManager compression;
     private PacketManager packets = new PacketManager(this);
 
     private ServerStatus serverStatus = ServerStatus.PRE;
@@ -31,9 +33,10 @@ public class P4JServer extends Thread implements P4JInstance {
     private ServerSocketChannel serverSocketChannel;
     private Selector serverSocketSelector;
     
-    public P4JServer(CodecManager cm, EncryptionManager em) {
+    public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com) {
         this.codec = cm;
         this.encryption = em;
+        this.compression = com;
     }
     public void bind(InetSocketAddress isa) throws IOException {
         serverSocketSelector = Selector.open();
@@ -141,9 +144,11 @@ public class P4JServer extends Thread implements P4JInstance {
 
     public CodecManager getCodec() {return codec;}
     public EncryptionManager getEncryption() {return encryption;}
+    public CompressionManager getCompression() {return compression;}
     public PacketManager getPackets() {return packets;}
     public void setCodec(CodecManager codec) {this.codec = codec;}
     public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
+    public void setCompression(CompressionManager compression) {this.compression = compression;}
     public void setPackets(PacketManager packets) {this.packets = packets;}
 
 }

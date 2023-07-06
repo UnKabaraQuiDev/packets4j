@@ -13,15 +13,21 @@ import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.p4j.socket.listeners.events.TransmitEvent;
+import lu.pcy113.p4j.socket.listeners.events.handler.ClientEventHandler;
 import lu.pcy113.p4j.socket.server.P4JServerException;
 import lu.pcy113.p4j.util.ArrayUtils;
+import lu.pcy113.p4j.compress.CompressionManager;
 
 public class P4JClient extends Thread implements P4JInstance {
 
     private ClientStatus clientStatus = ClientStatus.PRE;
 
+    private ClientEventHandler clientEventHandler = new ClientEventHandler();
+
     private CodecManager codec;
     private EncryptionManager encryption;
+    private CompressionManager compression;
     private PacketManager packets = new PacketManager(this);
 
     private InetSocketAddress localInetSocketAddress;
@@ -29,9 +35,10 @@ public class P4JClient extends Thread implements P4JInstance {
     
     private ClientServer clientServer;
 
-    public P4JClient(CodecManager cm, EncryptionManager em) {
+    public P4JClient(CodecManager cm, EncryptionManager em, CompressionManager com) {
         this.codec = cm;
         this.encryption = em;
+        this.compression = com;
     }
     public void bind() throws IOException {bind(0);}
     public void bind(int port) throws IOException {
@@ -84,11 +91,14 @@ public class P4JClient extends Thread implements P4JInstance {
     }
     protected void read_handleRawPacket(int id, ByteBuffer content) {
     	try {
+            content = compression.decompress(content);
 	        content = encryption.decrypt(content);
 	        Object obj = codec.decode(content);
 	        
 	        S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 	        packet.clientRead(this, obj);
+
+            clientEventHandler.appendReceive(new ReceiveEvent<P4JClient>(this, Packet));
 	    }catch(Exception e) {
 			handleException("read_handleRawPacket", e);
 		}
@@ -97,7 +107,16 @@ public class P4JClient extends Thread implements P4JInstance {
     public boolean write(C2SPacket packet) {
     	try {
 	        Object obj = packet.clientWrite(this);
+
+            TransmitEvent<P4JInstance> te = new TransmitEvent<P4JClient>(this, packet);
+            clientEventHandler.handleEvent(te);
+            if(te.isCancelled()) {
+                logger.info("Packet "+packet+", cancelled by: "+te.getCallerClasses().entrySet().stream().sorted(Maps.reverseOrder()).anyMatch((s) -> s.getValue() == true)).get();
+                return;
+            }
+
 	        ByteBuffer content = codec.encode(obj);
+            content = compression.compress(content);
 	        content = encryption.encrypt(content);
 	
 	        ByteBuffer bb = ByteBuffer.allocate(4+4+content.capacity());
@@ -142,9 +161,11 @@ public class P4JClient extends Thread implements P4JInstance {
 
     public CodecManager getCodec() {return codec;}
     public EncryptionManager getEncryption() {return encryption;}
+    public CompressionManager getCompression() {return compression;}
     public PacketManager getPackets() {return packets;}
     public void setCodec(CodecManager codec) {this.codec = codec;}
     public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
+    public void setCompression(CompressionManager compression) {this.compression = compression;}
     public void setPackets(PacketManager packets) {this.packets = packets;}
     
 }

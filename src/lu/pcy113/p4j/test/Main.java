@@ -12,14 +12,14 @@ public class Main {
     
     public static void main(String args[]) throws Exception {
     	
-    	P4JServer server = new P4JServer(CodecManager.base(), EncryptionManager.raw());
+    	P4JServer server = new P4JServer(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
     	server.bind(new InetSocketAddress(8361));
     	server.getPackets().register(PingPongPacket.class, 1);
     	server.setAccepting();
     	
     	System.out.println("server done");
     	
-    	P4JClient client = new P4JClient(CodecManager.base(), EncryptionManager.raw());
+    	P4JClient client = new P4JClient(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
     	client.bind();
     	client.getPackets().register(PingPongPacket.class, 1);
     	client.connect(InetAddress.getLocalHost(), server.getLocalInetSocketAddress().getPort());

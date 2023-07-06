@@ -47,6 +47,7 @@ public class ServerClient {
     }
     protected void read_handleRawPacket(int id, ByteBuffer content) {
     	try {
+			content = server.getCompression().compress(content);
 	        content = server.getEncryption().decrypt(content);
 	        Object obj = server.getCodec().decode(content);
 	        
@@ -60,7 +61,8 @@ public class ServerClient {
     	try {
 	    	ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 	    	content = server.getEncryption().encrypt(content);
-	        socketChannel.write(content);
+	        content = server.getCompression().compress(content);
+			socketChannel.write(content);
 	        return true;
     	}catch(Exception e) {
     		handleException("write", e);
