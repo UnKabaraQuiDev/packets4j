@@ -10,9 +10,6 @@ import java.nio.channels.SocketChannel;
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.ReceiveEvent;
-import lu.pcy113.p4j.events.TransmitEvent;
-import lu.pcy113.p4j.events.handler.EventHandler;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -23,8 +20,6 @@ import lu.pcy113.p4j.util.ArrayUtils;
 public class P4JClient extends Thread implements P4JInstance {
 
     private ClientStatus clientStatus = ClientStatus.PRE;
-
-    private EventHandler eventHandler = new EventHandler(false);
 
     private CodecManager codec;
     private EncryptionManager encryption;
@@ -100,8 +95,6 @@ public class P4JClient extends Thread implements P4JInstance {
 	        
 	        S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 	        packet.clientRead(this, obj);
-
-            eventHandler.appendEvent(new ReceiveEvent<P4JClient>(this, packet));
 	    }catch(Exception e) {
 			handleException("read_handleRawPacket", e);
 		}
@@ -110,12 +103,6 @@ public class P4JClient extends Thread implements P4JInstance {
     public boolean write(C2SPacket packet) {
     	try {
 	        Object obj = packet.clientWrite(this);
-
-            TransmitEvent<P4JClient> te = new TransmitEvent<>(this, packet);
-            eventHandler.handleEvent(te);
-            if(te.isCancelled())
-                return false;
-
 	        ByteBuffer content = codec.encode(obj);
 	        content = encryption.encrypt(content);
             content = compression.compress(content);
@@ -157,7 +144,6 @@ public class P4JClient extends Thread implements P4JInstance {
     }
     
     public ClientStatus getClientStatus() {return clientStatus;}
-    public EventHandler getEventHandler() {return eventHandler;}
     public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
     public ClientServer getClientServer() {return clientServer;}
 

@@ -7,12 +7,8 @@ import java.util.Arrays;
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.ReceiveEvent;
-import lu.pcy113.p4j.events.TransmitEvent;
-import lu.pcy113.p4j.events.listener.Listener;
 import lu.pcy113.p4j.socket.client.P4JClient;
 import lu.pcy113.p4j.socket.server.P4JServer;
-import lu.pcy113.p4j.socket.server.ServerClient;
 
 public class Main {
     
@@ -38,18 +34,6 @@ public class Main {
     	server.getPackets().register(PingPongPacket.class, 1);
     	server.setAccepting();
     	
-    	server.getEventHandler().register(new Listener<ServerClient>() {
-    		@Override
-    		public void receive(ReceiveEvent<ServerClient> event) {
-    			System.out.println(Arrays.toString(Thread.currentThread().getStackTrace()));
-    			System.out.println("--- server read: "+event.getPacket());
-    		}
-    		@Override
-    		public void transmit(TransmitEvent<ServerClient> event) {
-    			System.out.println("--- server write: "+event.getPacket());
-    		}
-		});
-    	
     	System.out.println("server done");
     	
     	P4JClient client = new P4JClient(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
@@ -57,17 +41,6 @@ public class Main {
     	client.getPackets().register(PingPongPacket.class, 1);
     	client.connect(InetAddress.getLocalHost(), server.getLocalInetSocketAddress().getPort());
     	System.out.println(client.getLocalInetSocketAddress());
-    	
-    	client.getEventHandler().register(new Listener<P4JClient>() {
-    		@Override
-    		public void receive(ReceiveEvent<P4JClient> event) {
-    			System.out.println("--- client read: "+event.getPacket());
-    		}
-    		@Override
-    		public void transmit(TransmitEvent<P4JClient> event) {
-    			System.out.println("--- client write: "+event.getPacket());
-    		}
-		});
     	
     	System.out.println("client done");
     	
