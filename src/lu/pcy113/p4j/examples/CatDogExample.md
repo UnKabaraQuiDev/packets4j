@@ -95,6 +95,8 @@ Send Packets:
 ```
 // See "Create a Server"
 private void sendChoiceRequest(ServerClient client) {
+	System.out.println("Client connected to server");
+
 	// Send a packet to the newly connected client
 	client.write(new S2C_CatDogPacket());
 
@@ -115,12 +117,12 @@ In this example, the server-client packet exchange should look like this:
 
 And the System.out output (for a single client):
 ```
-(Server): Server bound
-(Server): Server listening and accepting clients
+(Server): Server bound                           // bind
+(Server): Server listening and accepting clients // setAccepting
 
-(Client): Client bound
-(Client): Client connected
-(Server): Client connected to server
+(Client): Client bound               // bind
+(Client): Client connected           // connect
+(Server): Client connected to server // sendChoiceRequest
 
 // S2C
 (Server): Asked to client    // serverWrite
