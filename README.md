@@ -140,7 +140,25 @@ CodecManagers:
 ```
 
 ```
-The `S2CPacket` and `C2SPacket` could be registered with the same id if they send/receive the same type of Object (in this case: String[] ≠ String).
+The `S2CPacket` and `C2SPacket` could be registered with the same id as long as there is an outgoing (serverside) and an ingoing (clientside) Packet that take the same king of Object as input.
+The server cannot send a S2CPacket<String[]> with id 0, when the clients awaits a S2CPacket<String> as id 0. However, C2SPacket<String> (serverside) with id 0 would be a valid as long as the C2SPacket (clientside) also awaits a <String> with id 0.
+
+This table represents a valid packet configuration:
+(S/C : Server/Client where the packet was registered)
+| S/C | ID | TYPE | OBJECT |
+|-----|----|------|--------|
+|  C  | 0  | S2C  | T1     | 
+|  S  | 0  | S2C  | T1     | 
+|  C  | 0  | C2S  | T2     | 
+|  S  | 0  | C2S  | T2     | 
+
+This table represents a wrong packet configuration:
+| S/C | ID | TYPE | OBJECT |
+|-----|----|------|--------|
+|  C  | 0  | S2C  | T1     | 
+|  S  | 0  | S2C  | T2     | 
+|  C  | 0  | C2S  | T2     | 
+|  S  | 0  | C2S  | T3     | 
 
 EncryptionManager:
 ```
