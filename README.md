@@ -18,6 +18,7 @@ The construction of a data block varies depending of the generic argument passed
 |------|--------|------|-------------|
 |short | 2B     |HEADER| The header used to decode the following data, see [CodecManager](#codecmanager).|
 | x    |variable| DATA | The data of the block.|
+
 This definition is valable for generic types such as: Byte, Short, Integer, Double, Float, Long and Character, because their size is known. The header can be omitted in some cases, such as in arrays or maps where multiple following elements use the same header and is specified in the parent data block<br>
 Data blocks for types with variable size such as String, Arrays, Lists and Maps have a different construction:
 | TYPE | LENGTH | NAME | DESCRIPTION |
@@ -33,11 +34,13 @@ Data blocks can be concatonated inside each other, for example a String[] (Strin
 |int   | 4B     |LENGTH| The count of elements contained int the array.|
 |short | 2B     |HEADER| The String header.|
 | x    |variable| DATA | The data of the block.|
+
 This specific data is constructed this way:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
 |  int | 4B     |LENGTH| The length of the following String.|
 | x    | LENGTH | DATA | The bytes of the String.|
+
 Note that the Header is dropped because it is specified after the Array's length; the same decoder is used for all of the elements contained in the array.
 
 
