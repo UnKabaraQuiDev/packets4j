@@ -40,7 +40,7 @@ public class ServerClient {
 	        content.flip();
 	        int id = content.getInt();
 	        
-	        System.out.println("serverclient#read: "+ArrayUtils.byteArrayToHexString(content.array()));
+	        //System.out.println("serverclient#read: "+ArrayUtils.byteBufferToHexString(content));
 	
 	        read_handleRawPacket(id, content);
     	}catch(IOException e) {
@@ -71,7 +71,7 @@ public class ServerClient {
 	        bb.put(content);
 	        bb.flip();
 	        
-	        System.out.println("serverclient#write: "+ArrayUtils.byteBufferToHexString(bb));
+	        //System.out.println("serverclient#write: "+ArrayUtils.byteBufferToHexString(bb));
 	        
 			socketChannel.write(bb);
 			//socketChannel.socket().getOutputStream().flush();

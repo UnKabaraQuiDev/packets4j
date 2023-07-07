@@ -80,7 +80,7 @@ public class P4JServer extends Thread implements P4JInstance {
                         clients.get(clientChannel).read();
                         if(key.isWritable()) {
                         	clientChannel.socket().getOutputStream().flush();
-                        	System.out.println("server#read: flushed");
+                        	//System.out.println("server#read: flushed");
                         }
                     }
 
@@ -131,7 +131,7 @@ public class P4JServer extends Thread implements P4JInstance {
     public void close() {
         if(serverStatus.equals(ServerStatus.CLOSED) || serverStatus.equals(ServerStatus.PRE))
             throw new P4JServerException("Cannot close not started server socket.");
-        //kickClients("Server Closed", true);
+        
         try {
 	        serverSocketChannel.close();
 	        serverStatus = ServerStatus.CLOSED;

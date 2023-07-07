@@ -34,7 +34,6 @@ public class ArrayListEncoder implements Encoder<ArrayList<Object>> {
      */
     public ByteBuffer encode(boolean head, ArrayList<Object> obj) {
     	String name = obj.getClass().getName();
-    	System.out.println("name: "+name);
         Encoder elementEncoder = cm.getEncoder(name.substring(2, name.length()-1));
         if(elementEncoder == null)
         	throw new EncoderNotFoundException("Encoder for object: "+obj.getClass().getName()+", not found in codec.");

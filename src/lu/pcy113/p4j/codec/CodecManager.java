@@ -4,7 +4,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map.Entry;
 
-import lu.pcy113.p4j.codec.decoder.ArrayListDecoder;
+import lu.pcy113.p4j.codec.decoder.ArrayDecoder;
 import lu.pcy113.p4j.codec.decoder.ByteDecoder;
 import lu.pcy113.p4j.codec.decoder.CharacterDecoder;
 import lu.pcy113.p4j.codec.decoder.Decoder;
@@ -15,7 +15,7 @@ import lu.pcy113.p4j.codec.decoder.LongDecoder;
 import lu.pcy113.p4j.codec.decoder.MapDecoder;
 import lu.pcy113.p4j.codec.decoder.ShortDecoder;
 import lu.pcy113.p4j.codec.decoder.StringDecoder;
-import lu.pcy113.p4j.codec.encoder.ArrayListEncoder;
+import lu.pcy113.p4j.codec.encoder.ArrayEncoder;
 import lu.pcy113.p4j.codec.encoder.ByteEncoder;
 import lu.pcy113.p4j.codec.encoder.CharacterEncoder;
 import lu.pcy113.p4j.codec.encoder.DoubleEncoder;
@@ -84,7 +84,7 @@ public class CodecManager {
     	cm.register(new LongEncoder(), new LongDecoder(), (short) 6);
     	cm.register(new CharacterEncoder(), new CharacterDecoder(), (short) 7);
     	cm.register(new StringEncoder(), new StringDecoder(), (short) 8);
-    	cm.register(new ArrayListEncoder(), new ArrayListDecoder(), (short) 9);
+    	cm.register(new ArrayEncoder(), new ArrayDecoder(), (short) 9);
     	cm.register(new MapEncoder(), new MapDecoder(), (short) 10);
     	
     	return cm;

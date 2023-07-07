@@ -86,7 +86,7 @@ public class P4JClient extends Thread implements P4JInstance {
 	        content.flip();
 	        int id = content.getInt();
 	        
-	        System.out.println("client#read: "+ArrayUtils.byteBufferToHexString(content));
+	        //System.out.println("client#read: "+ArrayUtils.byteBufferToHexString(content));
 	
 	        read_handleRawPacket(id, content);
 	    }catch(ClosedByInterruptException e) {
@@ -121,7 +121,7 @@ public class P4JClient extends Thread implements P4JInstance {
 	        bb.put(content);
 	        bb.flip();
 	        
-	        System.out.println("client#write: "+ArrayUtils.byteBufferToHexString(bb));
+	        //System.out.println("client#write: "+ArrayUtils.byteBufferToHexString(bb));
 	        
 	        clientSocketChannel.write(bb);
 	        
@@ -135,7 +135,7 @@ public class P4JClient extends Thread implements P4JInstance {
     public void close() {
         if(clientStatus.equals(ClientStatus.CLOSED) || clientStatus.equals(ClientStatus.PRE))
             throw new P4JServerException("Cannot close not started client socket.");
-        //kickClients("Server Closed", true);
+        
         try {
         	clientStatus = ClientStatus.CLOSING;
         	this.interrupt();

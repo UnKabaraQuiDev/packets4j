@@ -36,8 +36,6 @@ public class PacketManager {
             	outPackets.put(p.getName(), id);
             }
         }
-        
-        System.out.println(((Thread) type).getName()+" :: in"+inPackets+"\nout"+outPackets);
     }
     
     public int getId(Class<?> p) {
@@ -46,17 +44,25 @@ public class PacketManager {
     	return outPackets.get(p.getName());
     }
     
-    public Packet packetInstance(int id) throws UnknownPacketException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+    public Packet packetInstance(int id) throws UnknownPacketException, PacketInstanceException {
         if(!inPackets.containsKey(id))
             throw new UnknownPacketException("Packet with id: "+id+"; not registered in PacketManager");
         
         Class<Packet> pair = inPackets.get(id);
-        return pair.getConstructor().newInstance();
+        try {
+        	return pair.getConstructor().newInstance();
+        }catch(NoSuchMethodException e) {
+        	throw new PacketInstanceException("No-arg constructor for Packet "+pair.getName()+", not found.");
+        }catch(InstantiationException e) {
+        	throw new PacketInstanceException("Packet "+pair.getName()+", cannot be abstract.");
+        }catch(InvocationTargetException | IllegalAccessException e) {
+        	throw new PacketInstanceException(e, "Exception occured during initialization");
+        }
     }
-    public Packet packetInstance(Class<Packet> cp) throws UnknownPacketException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+    public Packet packetInstance(Class<Packet> cp) throws UnknownPacketException, PacketInstanceException {
         return packetInstance(cp.getName());
     }
-    public Packet packetInstance(String cp) throws UnknownPacketException, NoSuchMethodException, InvocationTargetException, IllegalAccessException, InstantiationException {
+    public Packet packetInstance(String cp) throws UnknownPacketException, PacketInstanceException {
         if(!outPackets.containsKey(cp))
             throw new UnknownPacketException("Packet with name: "+cp+"; not registered in PacketManager");
         

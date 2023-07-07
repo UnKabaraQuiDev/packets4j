@@ -2,7 +2,7 @@ package lu.pcy113.p4j.examples;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 
 import lu.pcy113.p4j.codec.CodecManager;
@@ -71,13 +71,11 @@ public class CatDogExample {
 		client.connect(server.getLocalInetSocketAddress());
 		System.out.println("Client connected");
 		
-		Thread.sleep(5000);
+		Thread.sleep(1000);
 		
 		
 		client.close();
-		
 		server.close();
-		
 	}
 	
 	// See "Create a Server"
@@ -98,26 +96,24 @@ public class CatDogExample {
 	
 	// This class is used to manage the communication between the Server → Client
 	// It describes how to handle the received String[] and what value to send
-	public static class S2C_CatDogPacket implements S2CPacket<ArrayList<String>> {
+	public static class S2C_CatDogPacket implements S2CPacket<Object[]> {
 		
 		// Gets called when a Client receives this packet from the connected server
-		public void clientRead(P4JClient client, ArrayList<String> input) {
+		public void clientRead(P4JClient client, Object[] input) {
 			System.out.println("Question received: ");
-			System.out.println(input);
+			System.out.println(Arrays.toString(input));
 			Random r = new Random();
-			int choiceIndex = r.nextInt(input.size());
-			client.write(new C2S_CatDogPacket(input.get(choiceIndex)));
+			int choiceIndex = r.nextInt(input.length);
+			
+			// We can cast to a String because we're sure serverWrite() returns String[]
+			client.write(new C2S_CatDogPacket((String) input[choiceIndex]));
 		}
 
 		// Gets called when using ServerClient.write(new S2C_CatDogPacket())
 		// Returns the value to be sent
-		public ArrayList<String> serverWrite(ServerClient client) {
+		public String[] serverWrite(ServerClient client) {
 			System.out.println("Asked to client");
-			ArrayList<String> al = new ArrayList<>();
-			al.add("Dog");
-			al.add("or");
-			al.add("Cat");
-			return al;
+			return new String[] {"Dog", "or", "Cat"};
 		}
 	}
 
@@ -125,7 +121,9 @@ public class CatDogExample {
 	// It describes how to handle the received String and what value to send
 	public static class C2S_CatDogPacket implements C2SPacket<String> {
 		String choice;
-
+		
+		// A constructor with no argument is needed or a PacketInstanceException will be thrown
+		public C2S_CatDogPacket() {}
 		public C2S_CatDogPacket(String choice) {
 			System.out.println("Choice prepared: "+choice);
 			this.choice = choice;
