@@ -5,22 +5,28 @@ import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.Listeners;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
+import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.socket.server.P4JServerException;
-import lu.pcy113.p4j.util.ArrayUtils;
+import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
+import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
-public class P4JClient extends Thread implements P4JInstance {
+public class P4JClient extends Thread implements P4JInstance, P4JClientInstance {
 
     private ClientStatus clientStatus = ClientStatus.PRE;
 
+    public Listeners listenersClosed = new Listeners();
+    public Listeners listenersConnected = new Listeners();
+    
     private CodecManager codec;
     private EncryptionManager encryption;
     private CompressionManager compression;
@@ -56,6 +62,8 @@ public class P4JClient extends Thread implements P4JInstance {
         clientServer = new ClientServer(new InetSocketAddress(clientSocketChannel.socket().getInetAddress(), clientSocketChannel.socket().getPort()));
         
         super.start();
+        
+        listenersConnected.handle(new ClientInstanceConnectedEvent(this, clientServer));
     }
     public void connect(InetSocketAddress isa) throws IOException {
 		this.connect(isa.getAddress(), isa.getPort());
@@ -91,6 +99,8 @@ public class P4JClient extends Thread implements P4JInstance {
 	        read_handleRawPacket(id, content);
 	    }catch(ClosedByInterruptException e) {
 	    	// ignore because triggered in #close()
+	    }catch(ClosedChannelException e) {
+	    	// ignore
 	    }catch(IOException e) {
 			handleException("read", e);
 		}
@@ -134,13 +144,15 @@ public class P4JClient extends Thread implements P4JInstance {
     
     public void close() {
         if(clientStatus.equals(ClientStatus.CLOSED) || clientStatus.equals(ClientStatus.PRE))
-            throw new P4JServerException("Cannot close not started client socket.");
+            throw new P4JClientException("Cannot close not started client socket.");
         
         try {
         	clientStatus = ClientStatus.CLOSING;
         	this.interrupt();
 	        clientSocketChannel.close();
 	        clientStatus = ClientStatus.CLOSED;
+	        
+	        listenersClosed.handle(new ClosedChannelEvent(null, this));
         }catch(IOException e) {
         	handleException("close", e);
         }

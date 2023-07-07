@@ -2,7 +2,9 @@ package lu.pcy113.p4j.socket.client;
 
 import java.net.InetSocketAddress;
 
-public class ClientServer {
+import lu.pcy113.p4j.socket.P4JServerInstance;
+
+public class ClientServer implements P4JServerInstance {
 
 	private InetSocketAddress remoteInetSocketAddress;
 	

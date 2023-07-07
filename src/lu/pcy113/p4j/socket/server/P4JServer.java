@@ -6,21 +6,27 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
-import java.util.Collection;
 
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.Listeners;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
 
-public class P4JServer extends Thread implements P4JInstance {
+public class P4JServer extends Thread implements P4JInstance, P4JServerInstance {
 
 	private ServerStatus serverStatus = ServerStatus.PRE;
+	
+	public Listeners listenersClosed = new Listeners();
+    public Listeners listenersConnected = new Listeners();
 	
 	private HashMap<SocketChannel, ServerClient> clients = new HashMap<>();
 
@@ -100,9 +106,8 @@ public class P4JServer extends Thread implements P4JInstance {
     public void clientConnection(SocketChannel sc) {
     	ServerClient sclient = new ServerClient(sc, this);
         registerClient(sclient);
-        clientConnected(sclient);
+        listenersConnected.handle(new ClientInstanceConnectedEvent(sclient, this));
     }
-    public void clientConnected(ServerClient client) {}
     public void registerClient(ServerClient sclient) {
         clients.put(sclient.getSocketChannel(), sclient);
     }

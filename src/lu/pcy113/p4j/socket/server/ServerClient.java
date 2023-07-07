@@ -2,15 +2,21 @@ package lu.pcy113.p4j.socket.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedByInterruptException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
-import lu.pcy113.p4j.util.ArrayUtils;
+import lu.pcy113.p4j.socket.P4JClientInstance;
+import lu.pcy113.p4j.socket.client.ClientStatus;
+import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
-public class ServerClient {
+public class ServerClient implements P4JClientInstance {
 
+	private ServerClientstatus serverClientStatus = ServerClientstatus.PRE;
+	
 	private UUID uuid;
 	private P4JServer server;
 	
@@ -21,6 +27,8 @@ public class ServerClient {
         this.server = server;
         
         this.uuid = UUID.randomUUID();
+        
+        this.serverClientStatus = ServerClientstatus.LISTENING;
     }
 
     public void read() {
@@ -43,9 +51,13 @@ public class ServerClient {
 	        //System.out.println("serverclient#read: "+ArrayUtils.byteBufferToHexString(content));
 	
 	        read_handleRawPacket(id, content);
-    	}catch(IOException e) {
-    		handleException("read", e);
-    	}
+    	}catch(ClosedByInterruptException e) {
+	    	// ignore because triggered in #close()
+	    }catch(ClosedChannelException e) {
+	    	// ignore
+	    }catch(IOException e) {
+			handleException("read", e);
+		}
     }
     protected void read_handleRawPacket(int id, ByteBuffer content) {
     	try {
@@ -86,7 +98,22 @@ public class ServerClient {
     	System.err.println(getClass().getName()+"/"+uuid+"> "+msg+" ::");
     	e.printStackTrace(System.err);
     }
-
+    
+    public void close() {
+        if(serverClientStatus.equals(ServerClientstatus.CLOSED) || serverClientStatus.equals(ServerClientstatus.PRE))
+            throw new P4JServerException("Cannot close not started client socket.");
+        
+        try {
+        	serverClientStatus = ServerClientstatus.CLOSING;
+	        socketChannel.close();
+	        serverClientStatus = ServerClientstatus.CLOSED;
+	        
+	        server.listenersClosed.handle(new ClosedChannelEvent(null, this));
+        }catch(IOException e) {
+        	handleException("close", e);
+        }
+    }
+    
     public SocketChannel getSocketChannel() {return socketChannel;}
     public UUID getUUID() {return uuid;}
 

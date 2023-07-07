@@ -50,12 +50,15 @@ Create a Server:
 CodecManager serverCodec = CodecManager.base();
 EncryptionManager serverEncryption = EncryptionManager.raw();
 CompressionManager serverCompression = CompressionManager.raw();
-P4JServer server = new P4JServer(serverCodec, serverEncryption, serverCompression) {
+P4JServer server = new P4JServer(serverCodec, serverEncryption, serverCompression);
+
+// Attach a listener to handle new connected clients
+server.listenersConnected.add(new Listener() {
 	@Override
-	public void clientConnected(ServerClient client) {
-		sendChoiceRequest(); // See "Send Packets"
+	public void handle(Event event) {
+		sendChoiceRequest((ServerClient) ((ClientInstanceConnectedEvent) event).getClient()); // See "Send Packets"
 	}
-};
+});
 
 // Register incoming and outdoing packets
 // Because S2C packet takes a String[] and C2S packet takes a String
@@ -64,10 +67,11 @@ server.getPackets().register(C2S_CatDogPacket.class, 1);
 server.getPackets().register(S2C_CatDogPacket.class, 2);
 
 // Bind to the local port
-server.bind(8090);
-
+System.out.println("Server bound");
+		
 // Set as listening and accepting clients
 server.setAccepting();
+System.out.println("Server listening and accepting clients");
 ```
 
 Create a Client:
@@ -75,25 +79,28 @@ Create a Client:
 CodecManager clientCodec = CodecManager.base();
 EncryptionManager clientEncryption = EncryptionManager.raw();
 CompressionManager clientCompression = CompressionManager.raw();
-P4JClient client = new P4JClient(clientCodec, clientEncryption, clientCompression);
+client = new P4JClient(clientCodec, clientEncryption, clientCompression);
 
 // Same as the Server
 client.getPackets().register(C2S_CatDogPacket.class, 1);
-client.getPackets().register(S2C_CatDogPacket.class, 2);
+client.registerPacket(S2C_CatDogPacket.class, 2);
 
 // Bind without any argument takes a free port, a specific port can be passed as argument
 client.bind();
+System.out.println("Client bound");
 ```
 
 Connect the Client:
 ```
 // Connect to the server
-client.connect(InetAddress.getLocalHost(), 8090);
+client.connect(server.getLocalInetSocketAddress());
+System.out.println("Client connected");
 ```
 
 Send Packets:
 ```
 // See "Create a Server"
+// This function gets called when a new client connects
 private void sendChoiceRequest(ServerClient client) {
 	System.out.println("Client connected to server");
 

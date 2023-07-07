@@ -8,9 +8,12 @@ import java.util.Random;
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.Event;
+import lu.pcy113.p4j.events.Listener;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.client.P4JClient;
+import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
 import lu.pcy113.p4j.socket.server.P4JServer;
 import lu.pcy113.p4j.socket.server.ServerClient;
 
@@ -26,12 +29,15 @@ public class CatDogExample {
 		CodecManager serverCodec = CodecManager.base();
 		EncryptionManager serverEncryption = EncryptionManager.raw();
 		CompressionManager serverCompression = CompressionManager.raw();
-		server = new P4JServer(serverCodec, serverEncryption, serverCompression) {
+		server = new P4JServer(serverCodec, serverEncryption, serverCompression);
+		
+		// Attach a listener to handle new connected clients
+		server.listenersConnected.add(new Listener() {
 			@Override
-			public void clientConnected(ServerClient client) {
-				sendChoiceRequest(client); // See "Send Packets"
+			public void handle(Event event) {
+				sendChoiceRequest((ServerClient) ((ClientInstanceConnectedEvent) event).getClient()); // See "Send Packets"
 			}
-		};
+		});
 
 		// Register incoming and outdoing packets
 		// Because S2C packet takes a String[] and C2S packet takes a String
@@ -79,6 +85,7 @@ public class CatDogExample {
 	}
 	
 	// See "Create a Server"
+	// This function gets called when a new client connects
 	private static void sendChoiceRequest(ServerClient client) {
 		System.out.println("Client connected to server");
 		
