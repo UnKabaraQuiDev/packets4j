@@ -141,7 +141,7 @@ CodecManagers:
 
 ```
 The `S2CPacket` and `C2SPacket` could be registered with the same id as long as there is an outgoing (serverside) and an ingoing (clientside) Packet that take the same king of Object as input.<br>
-The server cannot send a S2CPacket<String[]> with id 0, when the clients awaits a S2CPacket<String> as id 0. However, C2SPacket<String> (serverside) with id 0 would be a valid as long as the C2SPacket (clientside) also awaits a <String> with id 0.<br>
+The server cannot send a `S2CPacket<String[]>` with id 0, when the clients awaits a `S2CPacket<String>` as id 0. However, `C2SPacket<String>` (serverside) with id 0 would be a valid as long as the `C2SPacket` (clientside) also awaits a `<String>` with id 0.<br>
 
 This table represents a valid packet configuration:<br>
 (S/C : Server/Client where the packet was registered)
