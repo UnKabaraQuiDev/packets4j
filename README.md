@@ -4,8 +4,8 @@ A lightweights abstract socket & packet library.
 ### Example
 Create a Packet:
 ```
-// This class is used to manage the communication between the `Server → Client`
-// It describes how to handle the received `String[]` and what value to send
+// This class is used to manage the communication between the Server → Client
+// It describes how to handle the received String[] and what value to send
 public class S2C_CatDogPacket implements S2CPacket<String[]> {
 	
 	// Gets called when a Client receives this packet from the connected server
@@ -17,7 +17,7 @@ public class S2C_CatDogPacket implements S2CPacket<String[]> {
 		client.write(new C2S_CatDogPacket(input[choiceIndex]));
 	}
 
-	// Gets called when using `ServerClient.write(new S2C_CatDogPacket())`
+	// Gets called when using ServerClient.write(new S2C_CatDogPacket())
 	// Returns the value to be sent
 	public String[] serverWrite(ServerClient client) {
 		System.out.println("Asked to client");
@@ -25,8 +25,8 @@ public class S2C_CatDogPacket implements S2CPacket<String[]> {
 	}
 }
 
-// This class is used to manage the communication between the `Client → Server`
-// It describes how to handle the received `String` and what value to send
+// This class is used to manage the communication between the Client → Server
+// It describes how to handle the received String and what value to send
 public class C2S_CatDogPacket implements C2SPacket<String> {
 	String choice;
 
@@ -34,7 +34,7 @@ public class C2S_CatDogPacket implements C2SPacket<String> {
 		this.choice = choice;
 	}
 
-	// Gets called when using `P4JClient.write(new C2S_CatDogPacket())`
+	// Gets called when using P4JClient.write(new C2S_CatDogPacket())
 	// Returns the value to be sent
 	public String clientWrite(P4JClient client) {
 		System.out.println("Responding to server: "+choice);
@@ -47,6 +47,7 @@ public class C2S_CatDogPacket implements C2SPacket<String> {
 	}
 }
 ```
+The `S2CPacket` and `C2SPacket` interfaces can be implementing the same Object.
 
 Create a Server:
 ```
@@ -133,6 +134,22 @@ Closing the Server & Client:
 client.close();
 
 server.close();
+```
+
+CodecManagers:
+```
+
+```
+The `S2CPacket` and `C2SPacket` could be registered with the same id if they send/receive the same type of Object (in this case: String[] ≠ String).
+
+EncryptionManager:
+```
+
+```
+
+CompressionManager:
+```
+
 ```
 
 # Packages:
