@@ -160,6 +160,8 @@ This table represents a wrong packet configuration:
 |  C  | 0  | C2S  | send T2| 
 |  S  | 0  | C2S  | read T3| 
 
+Implementing `S2CPacket` and `C2SPacket` in the same subclass for the client and the server ensures that the awaited Object is the same for the two.<br>
+
 EncryptionManager:
 ```
 
