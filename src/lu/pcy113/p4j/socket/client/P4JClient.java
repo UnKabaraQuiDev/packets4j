@@ -36,6 +36,7 @@ public class P4JClient extends Thread implements P4JInstance {
         this.encryption = em;
         this.compression = com;
     }
+    
     public void bind() throws IOException {bind(0);}
     public void bind(int port) throws IOException {
         clientSocketChannel = SocketChannel.open();
@@ -45,8 +46,10 @@ public class P4JClient extends Thread implements P4JInstance {
         this.localInetSocketAddress = new InetSocketAddress(clientSocketChannel.socket().getInetAddress(), clientSocketChannel.socket().getLocalPort());
         super.setName("P4JClient@"+localInetSocketAddress.getHostString()+":"+localInetSocketAddress.getPort());
     } 
+    
     public void connect(InetAddress remote, int port) throws IOException {
         clientSocketChannel.connect(new InetSocketAddress(remote, port));
+        //clientSocketChannel.socket().setTcpNoDelay(true);
         clientSocketChannel.configureBlocking(true);
         clientStatus = ClientStatus.LISTENING;
         
@@ -54,6 +57,9 @@ public class P4JClient extends Thread implements P4JInstance {
         
         super.start();
     }
+    public void connect(InetSocketAddress isa) throws IOException {
+		this.connect(isa.getAddress(), isa.getPort());
+	}
 
     @Override
     public void run() {
@@ -65,7 +71,7 @@ public class P4JClient extends Thread implements P4JInstance {
 
     public void read() {
     	try {
-	        ByteBuffer bb = ByteBuffer.allocate(4);
+	        ByteBuffer bb = ByteBuffer.allocateDirect(4);
 	        if(clientSocketChannel.read(bb) != 4)
 	            return;
 	        
@@ -73,12 +79,14 @@ public class P4JClient extends Thread implements P4JInstance {
 	        int length = bb.getInt();
 	        bb.clear();
 	        
-	        ByteBuffer content = ByteBuffer.allocate(length);
+	        ByteBuffer content = ByteBuffer.allocateDirect(length);
 	        if(clientSocketChannel.read(content) != length)
 	            return;
 
 	        content.flip();
 	        int id = content.getInt();
+	        
+	        System.out.println("client#read: "+ArrayUtils.byteBufferToHexString(content));
 	
 	        read_handleRawPacket(id, content);
 	    }catch(ClosedByInterruptException e) {
@@ -113,7 +121,7 @@ public class P4JClient extends Thread implements P4JInstance {
 	        bb.put(content);
 	        bb.flip();
 	        
-	        System.out.println(ArrayUtils.byteArrayToHexString(bb.array()));
+	        System.out.println("client#write: "+ArrayUtils.byteBufferToHexString(bb));
 	        
 	        clientSocketChannel.write(bb);
 	        
@@ -141,6 +149,10 @@ public class P4JClient extends Thread implements P4JInstance {
     protected void handleException(String msg, Exception e) {
     	System.err.println(getClass().getName()+"/"+localInetSocketAddress+"> "+msg+" ::");
     	e.printStackTrace(System.err);
+    }
+    
+    public void registerPacket(Class<?> p, int id) {
+    	packets.register(p, id);
     }
     
     public ClientStatus getClientStatus() {return clientStatus;}

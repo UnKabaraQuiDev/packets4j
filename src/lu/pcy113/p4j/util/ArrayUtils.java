@@ -1,5 +1,6 @@
 package lu.pcy113.p4j.util;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -26,5 +27,15 @@ public final class ArrayUtils {
         }
         return sb.toString();
     }
+
+	public static String byteBufferToHexString(ByteBuffer bb) {
+		int x = bb.position();
+		StringBuilder sb = new StringBuilder();
+        while(bb.hasRemaining()) {
+            sb.append(String.format("%02X ", bb.get()));
+        }
+        bb.position(x);
+        return sb.toString();
+	}
 	
 }

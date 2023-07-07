@@ -2,7 +2,6 @@ package lu.pcy113.p4j.test;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
 
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;

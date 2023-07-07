@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
+import lu.pcy113.p4j.util.ArrayUtils;
 
 public class ServerClient {
 
@@ -24,7 +25,7 @@ public class ServerClient {
 
     public void read() {
     	try {
-	        ByteBuffer bb = ByteBuffer.allocate(4);
+	        ByteBuffer bb = ByteBuffer.allocateDirect(4);
 	        if(socketChannel.read(bb) != 4)
 	            return;
 	        
@@ -32,12 +33,14 @@ public class ServerClient {
 	        int length = bb.getInt();
 	        bb.clear();
 	        
-	        ByteBuffer content = ByteBuffer.allocate(length);
+	        ByteBuffer content = ByteBuffer.allocateDirect(length);
 	        if(socketChannel.read(content) != length)
 	            return;
 	        
 	        content.flip();
 	        int id = content.getInt();
+	        
+	        System.out.println("serverclient#read: "+ArrayUtils.byteArrayToHexString(content.array()));
 	
 	        read_handleRawPacket(id, content);
     	}catch(IOException e) {
@@ -58,11 +61,20 @@ public class ServerClient {
     }
     public boolean write(S2CPacket packet) {
     	try {
-    		System.out.println("sclient write packet"+packet);
 	    	ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 	    	content = server.getEncryption().encrypt(content);
 	        content = server.getCompression().compress(content);
-			socketChannel.write(content);
+	        
+	        ByteBuffer bb = ByteBuffer.allocateDirect(4+4+content.capacity());
+	        bb.putInt(content.limit() + 4); // Add id length
+	        bb.putInt(server.getPackets().getId(packet.getClass()));
+	        bb.put(content);
+	        bb.flip();
+	        
+	        System.out.println("serverclient#write: "+ArrayUtils.byteBufferToHexString(bb));
+	        
+			socketChannel.write(bb);
+			//socketChannel.socket().getOutputStream().flush();
 	        return true;
     	}catch(Exception e) {
     		handleException("write", e);

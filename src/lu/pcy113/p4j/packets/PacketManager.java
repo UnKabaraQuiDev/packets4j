@@ -36,6 +36,8 @@ public class PacketManager {
             	outPackets.put(p.getName(), id);
             }
         }
+        
+        System.out.println(((Thread) type).getName()+" :: in"+inPackets+"\nout"+outPackets);
     }
     
     public int getId(Class<?> p) {

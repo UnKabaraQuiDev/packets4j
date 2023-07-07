@@ -61,10 +61,10 @@ public class P4JServer extends Thread implements P4JInstance {
                 Set<SelectionKey> selectedKeys = serverSocketSelector.selectedKeys();
                 Iterator<SelectionKey> keyIterator = selectedKeys.iterator();
 
-                while (keyIterator.hasNext()) {
+                while(keyIterator.hasNext()) {
                     SelectionKey key = keyIterator.next();
                     
-                    if (key.isAcceptable()) {
+                    if(key.isAcceptable()) {
                         // Accept a new client connection
                         ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
                         SocketChannel clientChannel = serverChannel.accept();
@@ -74,10 +74,14 @@ public class P4JServer extends Thread implements P4JInstance {
                         clientChannel.register(serverSocketSelector, SelectionKey.OP_READ);
 
                         clientConnection(clientChannel);
-                    } else if (key.isReadable()) {
+                    }else if(key.isReadable()) {
                         // Read data from a client socket channel
                         SocketChannel clientChannel = (SocketChannel) key.channel();
                         clients.get(clientChannel).read();
+                        if(key.isWritable()) {
+                        	clientChannel.socket().getOutputStream().flush();
+                        	System.out.println("server#read: flushed");
+                        }
                     }
 
                     keyIterator.remove();
@@ -140,6 +144,10 @@ public class P4JServer extends Thread implements P4JInstance {
             throw new P4JServerException("Cannot set closed server socket in client refuse mode.");
     }
 
+    public void registerPacket(Class<?> p, int id) {
+    	packets.register(p, id);
+    }
+    
     public ServerStatus getServerStatus() {return serverStatus;}
     public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
     public Collection<ServerClient> getConnectedClients() {return clients.values();}
