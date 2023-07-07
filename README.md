@@ -147,16 +147,16 @@ This table represents a valid packet configuration:<br>
 (S/C : Server/Client where the packet was registered)
 | S/C | ID | TYPE | OBJECT |
 |-----|----|------|--------|
-|  C  | 0  | S2C  | read T1| 
 |  S  | 0  | S2C  | send T1| 
+|  C  | 0  | S2C  | read T1| 
 |  C  | 0  | C2S  | send T2| 
 |  S  | 0  | C2S  | read T2| 
 
 This table represents a wrong packet configuration:
 | S/C | ID | TYPE | OBJECT |
 |-----|----|------|--------|
-|  C  | 0  | S2C  | read T1| 
 |  S  | 0  | S2C  | send T2| 
+|  C  | 0  | S2C  | read T1| 
 |  C  | 0  | C2S  | send T2| 
 |  S  | 0  | C2S  | read T3| 
 
