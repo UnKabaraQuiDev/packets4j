@@ -4,7 +4,11 @@ A lightweights abstract socket & packet library.
 ### Example
 Create a Packet:
 ```
+// This class is used to manage the communication between the `Server → Client`
+// It describes how to handle the received `String[]` and what value to send
 public class S2C_CatDogPacket implements S2CPacket<String[]> {
+	
+	// Gets called when a Client receives this packet from the connected server
 	public void clientRead(P4JClient client, String[] input) {
 		System.out.println("Question received: ");
 		System.out.println(Arrays.toString(input));
@@ -12,11 +16,17 @@ public class S2C_CatDogPacket implements S2CPacket<String[]> {
 		int choiceIndex = r.nextInt(input.length);
 		client.write(new C2S_CatDogPacket(input[choiceIndex]));
 	}
+
+	// Gets called when using `ServerClient.write(new S2C_CatDogPacket())`
+	// Returns the value to be sent
 	public String[] serverWrite(ServerClient client) {
 		System.out.println("Asked to client");
 		return new String[] {"Dog", "or", "Cat"};
 	}
 }
+
+// This class is used to manage the communication between the `Client → Server`
+// It describes how to handle the received `String` and what value to send
 public class C2S_CatDogPacket implements C2SPacket<String> {
 	String choice;
 
@@ -24,10 +34,14 @@ public class C2S_CatDogPacket implements C2SPacket<String> {
 		this.choice = choice;
 	}
 
+	// Gets called when using `P4JClient.write(new C2S_CatDogPacket())`
+	// Returns the value to be sent
 	public String clientWrite(P4JClient client) {
 		System.out.println("Responding to server: "+choice);
 		return this.choice;
 	}
+
+	// Gets called when a Server receives this packet from a connected Client
     public void serverRead(ServerClient sclient, String obj)() {
 		System.out.println("Client answered: "+obj);
 	}
@@ -95,12 +109,12 @@ private void sendChoiceRequest(ServerClient client) {
 ```
 
 In this example, the server-client packet exchange should look like this:
-ORDER | DIR | TYPE | OBJECT | VALUE | FUNCTION
-------|-----|------|--------|-------|----------
-1. | send | S2C | String[] | input → {"Cat", "or", "Dog"} | serverWrite(ServerClient) → String[]
-2. | read | S2C | String[] | input                        | clientRead(P4JClient, String[])
-3. | send | C2S | String   | choice → input[random]       | clientWrite(P4JClient) → String
-4. | read | C2S | String   | choice                       | serverRead(ServerClient, String)
+| ORDER | DIR | TYPE | OBJECT | VALUE | FUNCTION |
+|------|-----|------|--------|-------|-----------|
+| 1. | send | S2C | String[] | input → {"Cat", "or", "Dog"} | serverWrite(ServerClient) → String[] | 
+| 2. | read | S2C | String[] | input                        | clientRead(P4JClient, String[]) | 
+| 3. | send | C2S | String   | choice → input[random]       | clientWrite(P4JClient) → String | 
+| 4. | read | C2S | String   | choice                       | serverRead(ServerClient, String) | 
 
 And the System.out output (for a single client):
 ```
