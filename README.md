@@ -1,5 +1,127 @@
-# packets4j
+# Packets4J
+A lightweights abstract socket & packet library.
 
+### Example
+Create a Packet:
+```
+public class S2C_CatDogPacket implements S2CPacket<String[]> {
+	public void clientRead(P4JClient client, String[] input) {
+		System.out.println("Question received: ");
+		System.out.println(Arrays.toString(input));
+		Random r = new Random();
+		int choiceIndex = r.nextInt(input.length);
+		client.write(new C2S_CatDogPacket(input[choiceIndex]));
+	}
+	public String[] serverWrite(ServerClient client) {
+		System.out.println("Asked to client");
+		return new String[] {"Dog", "or", "Cat"};
+	}
+}
+public class C2S_CatDogPacket implements C2SPacket<String> {
+	String choice;
+
+	public C2S_CatDogPacket(String choice) {
+		this.choice = choice;
+	}
+
+	public String clientWrite(P4JClient client) {
+		System.out.println("Responding to server: "+choice);
+		return this.choice;
+	}
+    public void serverRead(ServerClient sclient, String obj)() {
+		System.out.println("Client answered: "+obj);
+	}
+}
+```
+
+Create a Server:
+```
+CodecManager serverCodec = CodecManager.base();
+EncryptionManager serverEncryption = EncryptionManager.raw();
+CompressionManager serverCompression = CompressionManager.raw();
+P4JServer server = new P4JServer(serverCodec, serverEncryption, serverCompression) {
+	@Override
+	public void clientConnected(ServerClient client) {
+		sendChoiceRequest(); // See "Send Packets"
+	}
+};
+
+// Register incoming and outdoing packets
+// Because S2C packet takes a String[] and C2S packet takes a String
+// We can't use the same id, because the classes aren't equal
+server.getPackets().register(C2S_CatDogPacket.class, 1);
+server.getPackets().register(S2C_CatDogPacket.class, 2);
+
+// Bind to the local port
+server.bind(8090);
+
+// Set as listening and accepting clients
+server.setAccepting();
+```
+
+Create a Client:
+```
+CodecManager clientCodec = CodecManager.base();
+EncryptionManager clientEncryption = EncryptionManager.raw();
+CompressionManager clientCompression = CompressionManager.raw();
+P4JClient client = new P4JClient(clientCodec, clientEncryption, clientCompression);
+
+// Same as the Server
+client.getPackets().register(C2S_CatDogPacket.class, 1);
+client.getPackets().register(S2C_CatDogPacket.class, 2);
+
+// Bind without any argument takes a free port, a specific port can be passed as argument
+client.bind();
+```
+
+Connect the Client:
+```
+// Connect to the server
+client.connect(InetAddress.getLocalHost(), 8090);
+```
+
+Send Packets:
+```
+// See "Create a Server"
+private void sendChoiceRequest(ServerClient client) {
+	// Send a packet to the newly connected client
+	client.write(new S2C_CatDogPacket());
+
+	// OR
+	
+	// Broadcast a packet to all clients
+	server.broadcast(new S2C_CatDogPacket());
+}
+```
+
+In this example, the server-client packet exchange should look like this:
+ORDER | DIR | TYPE | OBJECT | VALUE | FUNCTION
+------|-----|------|--------|-------|----------
+1. | send | S2C | String[] | input → {"Cat", "or", "Dog"} | serverWrite(ServerClient) → String[]
+2. | read | S2C | String[] | input                        | clientRead(P4JClient, String[])
+3. | send | C2S | String   | choice → input[random]       | clientWrite(P4JClient) → String
+4. | read | C2S | String   | choice                       | serverRead(ServerClient, String)
+
+And the System.out output (for a single client):
+```
+// S2C
+Asked to client
+Question received:
+["Cat", "or", "Dog"]
+
+// C2S
+Responding to server: {choice}
+Client answered: {choice}
+```	
+
+Closing the Server & Client:
+```
+client.close();
+
+server.close();
+```
+
+# Packages:
 - [x] Codec
 	- [x] CodecManager
 	- [x] encoder

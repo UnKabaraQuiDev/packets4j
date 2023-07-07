@@ -9,6 +9,7 @@ import java.nio.channels.SocketChannel;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.Collection;
 
 import lu.pcy113.p4j.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
@@ -93,11 +94,11 @@ public class P4JServer extends Thread implements P4JInstance {
     }
 
     public void clientConnection(SocketChannel sc) {
-    	System.out.println("client connected");
-    	
-        ServerClient sclient = new ServerClient(sc, this);
+    	ServerClient sclient = new ServerClient(sc, this);
         registerClient(sclient);
+        clientConnected(sclient);
     }
+    public void clientConnected(ServerClient client) {}
     public void registerClient(ServerClient sclient) {
         clients.put(sclient.getSocketChannel(), sclient);
     }
@@ -141,6 +142,7 @@ public class P4JServer extends Thread implements P4JInstance {
 
     public ServerStatus getServerStatus() {return serverStatus;}
     public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
+    public Collection<ServerClient> getConnectedClients() {return clients.values();}
 
     public CodecManager getCodec() {return codec;}
     public EncryptionManager getEncryption() {return encryption;}
