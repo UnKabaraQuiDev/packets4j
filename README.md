@@ -1,7 +1,7 @@
 # Packets4J
 A lightweights abstract TCP/IP socket & packet library.
 
-===========================================
+======
 
 ## Content
 - [Content](#content)
@@ -20,7 +20,7 @@ A lightweights abstract TCP/IP socket & packet library.
 - [Examples](#examples)
 - [Packages](#packages)
 
-===========================================
+======
 
 
 ## Packets
@@ -87,7 +87,7 @@ This specific data is constructed this way:
 
 Note that the Header is dropped because it is specified after the Array's length; the same decoder is used for all of the elements contained in the array.
 
-===========================================
+======
 
 ## CodecManager
 The `CodecManager` class is responsible for managing the encoding and decoding of objects into and from `ByteBuffer` representations. It maintains a collection of registered encoders and decoders and provides methods to access and utilize them.
@@ -111,7 +111,7 @@ A `Decoder<T>` is used to decode a ByteBuffer input to the specified object `T`.
 3. `Class<?> type()`: Returns the Class which the Decoder is registered to.
 4. `void defaultRegister() throws IllegalArgumentException`: Verifies if the Decoder/Encoder was already registered, if it is it throws an `IllegalArgumentException`
 
-===========================================
+======
 
 ## EncryptionManager
 The `EncryptionManager` class is responsible for managing the encryption and decryption of the input and output `ByteBuffers`.
@@ -119,16 +119,16 @@ The `EncryptionManager` class is responsible for managing the encryption and dec
 2. `void register(Encoder e, Decoder d, short header)`: A convenience method to registers both an encoder and a decoder with the same header value.
 3. `static CodecManager base()`: This static factory method creates and initializes a CodecManager instance with a set of base encoders and decoders for basic types such as byte, short, integer, double, float, long, character, string, array, and map. It returns the initialized CodecManager instance.
 
-===========================================
+======
 
 ## CompressionManager:
 
-===========================================
+======
 
 ## Examples
 See [Cat Dog Question Example](src/lu/pcy113/p4j/examples/CatDogExample.md)
 
-===========================================
+======
 
 ## Packages:
 - [x] Codec
