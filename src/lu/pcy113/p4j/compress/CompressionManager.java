@@ -24,9 +24,9 @@ public class CompressionManager {
     public ByteBuffer decompress(ByteBuffer b) throws Exception {return decompressor.decompress(b);}
     public ByteBuffer compress(ByteBuffer b) throws Exception {return compressor.compress(b);}
 
-    public Compressor getEncryptor() {return compressor;}
-    public Decompressor getDecryptor() {return decompressor;}
-    public void setEncryptor(Compressor compressor) {this.compressor = compressor;}
-    public void setDecryptor(Decompressor decompressor) {this.decompressor = decompressor;}
+    public Compressor getCompressor() {return compressor;}
+    public Decompressor getDecompressor() {return decompressor;}
+    public void setCompressor(Compressor compressor) {this.compressor = compressor;}
+    public void setDecompressor(Decompressor decompressor) {this.decompressor = decompressor;}
 	
 }

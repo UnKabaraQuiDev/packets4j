@@ -1,5 +1,3 @@
-package lu.pcy113.p4j.examples;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;

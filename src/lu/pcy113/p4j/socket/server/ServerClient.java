@@ -10,7 +10,6 @@ import java.util.UUID;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
-import lu.pcy113.p4j.socket.client.ClientStatus;
 import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
 public class ServerClient implements P4JClientInstance {
