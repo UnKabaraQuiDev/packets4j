@@ -3,17 +3,13 @@ package lu.pcy113.p4j.test;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
-import lu.pcy113.p4j.codec.CodecManager;
-import lu.pcy113.p4j.compress.CompressionManager;
-import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.socket.client.P4JClient;
-import lu.pcy113.p4j.socket.server.P4JServer;
+import lu.pcy113.p4j.util.future.*;
 
 public class Main {
     
     public static void main(String args[]) throws Exception {
     	
-    	/*FutureTask<Integer, Void> ft1 = new FutureTask<Integer, Boolean>() {
+    	FutureTask<Integer, Void> ft1 = new FutureTask<Integer, Boolean>() {
 	    	@Override
 	    	public Boolean complete(Integer in) {
 	    		return in != 0;
@@ -25,10 +21,13 @@ public class Main {
     	
     	FutureTaskHandler fth = new FutureTaskHandler();
     	fth.append(ft1, 0);
+    	fth.append(ft1, 2);
+    	fth.append(ft1, 5);
+    	fth.append(ft1, 12);
+		
+    	fth.stopHandler(false);
     	
-    	fth.stopHandler(true);*/
-    	
-    	P4JServer server = new P4JServer(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
+    	/*P4JServer server = new P4JServer(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
     	server.bind(new InetSocketAddress(8361));
     	server.getPackets().register(PingPongPacket.class, 1);
     	server.setAccepting();
@@ -48,7 +47,7 @@ public class Main {
     	Thread.sleep(5000);
     	
     	client.close();
-    	server.close();
+    	server.close();*/
     	
     	
     }
