@@ -163,8 +163,8 @@ See [Cat Dog Question Example](examples/CatDogExample.md)
 ------
 
 ## Compiling
-To compile use `build/build.sh`; the arguments:
-(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.
+To compile use `build/build.sh`; the arguments:<br>
+(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.<br>
 (Optional) -main:{class}: Provide a class name as main class for the jar file.
 
 ------
