@@ -20,6 +20,7 @@ A lightweights abstract TCP/IP socket & packet library.
 	- [Decompression](#decompression)
 - [Examples](#examples)
 - [Packages](#packages)
+- [Compiling](#compiling)
 
 ------
 
@@ -161,8 +162,15 @@ See [Cat Dog Question Example](examples/CatDogExample.md)
 
 ------
 
+## Compiling
+To compile use `build/build.sh`; the arguments:
+(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.
+(Optional) -main:{class}: Provide a class name as main class for the jar file.
+
+------
+
 ## Packages:
-- [x] Codec
+- [x] codec
 	- [x] CodecManager
 	- [x] encoder
 		- [x] Encoder<T>
@@ -202,13 +210,11 @@ See [Cat Dog Question Example](examples/CatDogExample.md)
 		- [x] RawCompressor
 		- [ ] ZstdCompressor
 		- [ ] LZOCompressor
-		- [x] SnappyCompressor
 	- [ ] decompressor
 		- [x] Decompressor
 		- [x] RawDecompressor
 		- [ ] ZstdDecompressor
 		- [ ] LZODecompressor
-		- [x] SnappyDecompressor
 - [x] packets
 	- [x] PacketManager
 	- [x] Packet
