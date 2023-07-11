@@ -148,7 +148,7 @@ The `EncryptionManager` class is responsible for managing the encryption and dec
 
 ------
 
-## CompressionManager:
+## CompressionManager
 The `CompressionManager` class is responsible for managing the compressing and decompressing the input and output `ByteBuffers`.
 1. `Compressor getCompressor()`, `Decompressor getDecompressor()`: Getters for Compressor/Decompressor.
 2. `void setCompressor(Compressor e)`, `void setDecompressor(Decompressor d)`: Setters for Compressor/Decompressor.
@@ -169,7 +169,7 @@ To compile use `build/build.sh`; the arguments:<br>
 
 ------
 
-## Packages:
+## Packages
 - [x] codec
 	- [x] CodecManager
 	- [x] encoder
