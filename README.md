@@ -19,8 +19,8 @@ A lightweights abstract TCP/IP socket & packet library.
 	- [Compression](#compression)
 	- [Decompression](#decompression)
 - [Examples](#examples)
-- [Packages](#packages)
 - [Compiling](#compiling)
+- [Packages](#packages)
 
 ------
 
@@ -148,7 +148,7 @@ The `EncryptionManager` class is responsible for managing the encryption and dec
 
 ------
 
-## CompressionManager:
+## CompressionManager
 The `CompressionManager` class is responsible for managing the compressing and decompressing the input and output `ByteBuffers`.
 1. `Compressor getCompressor()`, `Decompressor getDecompressor()`: Getters for Compressor/Decompressor.
 2. `void setCompressor(Compressor e)`, `void setDecompressor(Decompressor d)`: Setters for Compressor/Decompressor.
@@ -163,13 +163,13 @@ See [Cat Dog Question Example](examples/CatDogExample.md)
 ------
 
 ## Compiling
-To compile use `build/build.sh`; the arguments:
-(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.
+To compile use `build/build.sh`; the arguments:<br>
+(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.<br>
 (Optional) -main:{class}: Provide a class name as main class for the jar file.
 
 ------
 
-## Packages:
+## Packages
 - [x] codec
 	- [x] CodecManager
 	- [x] encoder
