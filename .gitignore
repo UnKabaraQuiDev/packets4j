@@ -86,3 +86,7 @@ local.properties
 
 .classpath
 
+build/
+!build/build_no_examples.sh
+
+test/
