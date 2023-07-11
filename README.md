@@ -19,8 +19,8 @@ A lightweights abstract TCP/IP socket & packet library.
 	- [Compression](#compression)
 	- [Decompression](#decompression)
 - [Examples](#examples)
-- [Packages](#packages)
 - [Compiling](#compiling)
+- [Packages](#packages)
 
 ------
 
