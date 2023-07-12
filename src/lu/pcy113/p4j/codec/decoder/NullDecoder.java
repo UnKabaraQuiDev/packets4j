@@ -1,17 +1,17 @@
-package lu.pcy113.p4j.codec.encoder;
+package lu.pcy113.p4j.codec.decoder;
 
 import java.nio.ByteBuffer;
 
 import lu.pcy113.p4j.codec.CodecManager;
 
-public class VoidEncoder implements Encoder<Void> {
+public class NullDecoder implements Decoder<Object> {
 
 	public CodecManager cm = null;
     public short header;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Void.class;}
+    public Class<?> type() {return Byte.class;}
     
     public String register(CodecManager cm, short header) {
     	verifyRegister();
@@ -21,14 +21,15 @@ public class VoidEncoder implements Encoder<Void> {
         
         return type().getName();
     }
-    
-    public ByteBuffer encode(boolean head, Void obj) {
-        ByteBuffer bb = ByteBuffer.allocate((head ? 2 : 0));
-        if(head)
-            bb.putShort(header);
-        
-        bb.flip();
-        return bb;
-    }
 
+    public Byte decode(boolean head, ByteBuffer bb) {
+        if(head) {
+            short nheader = bb.getShort();
+            if(nheader != header)
+                Decoder.decoderNotCompatible(nheader, header);
+        }
+
+        return null;
+    }
+	
 }

@@ -13,6 +13,7 @@ import lu.pcy113.p4j.codec.decoder.FloatDecoder;
 import lu.pcy113.p4j.codec.decoder.IntegerDecoder;
 import lu.pcy113.p4j.codec.decoder.LongDecoder;
 import lu.pcy113.p4j.codec.decoder.MapDecoder;
+import lu.pcy113.p4j.codec.decoder.NullDecoder;
 import lu.pcy113.p4j.codec.decoder.ShortDecoder;
 import lu.pcy113.p4j.codec.decoder.StringDecoder;
 import lu.pcy113.p4j.codec.decoder.VoidDecoder;
@@ -26,6 +27,7 @@ import lu.pcy113.p4j.codec.encoder.FloatEncoder;
 import lu.pcy113.p4j.codec.encoder.IntegerEncoder;
 import lu.pcy113.p4j.codec.encoder.LongEncoder;
 import lu.pcy113.p4j.codec.encoder.MapEncoder;
+import lu.pcy113.p4j.codec.encoder.NullEncoder;
 import lu.pcy113.p4j.codec.encoder.ShortEncoder;
 import lu.pcy113.p4j.codec.encoder.StringEncoder;
 import lu.pcy113.p4j.codec.encoder.VoidEncoder;
@@ -78,6 +80,7 @@ public class CodecManager {
     public static final CodecManager base() {
     	CodecManager cm = new CodecManager();
     	
+    	cm.register(new NullEncoder(), new NullDecoder(), (short) 0);
     	cm.register(new ByteEncoder(), new ByteDecoder(), (short) 1);
     	cm.register(new ShortEncoder(), new ShortDecoder(), (short) 2);
     	cm.register(new IntegerEncoder(), new IntegerDecoder(), (short) 3);
