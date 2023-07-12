@@ -11,7 +11,7 @@ public class NullEncoder implements Encoder<Object> {
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Byte.class;}
+    public Class<?> type() {return null;}
     public boolean confirmType(Object obj) {return obj == null;}
     
     public String register(CodecManager cm, short header) {

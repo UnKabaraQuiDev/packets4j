@@ -11,7 +11,7 @@ public class NullDecoder implements Decoder<Object> {
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Byte.class;}
+    public Class<?> type() {return null;}
     
     public String register(CodecManager cm, short header) {
     	verifyRegister();
