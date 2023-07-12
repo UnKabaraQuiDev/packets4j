@@ -114,6 +114,7 @@ public class ServerClient implements P4JClientInstance {
     }
     
     public SocketChannel getSocketChannel() {return socketChannel;}
+    public P4JServer getServer() {return server;}
     public UUID getUUID() {return uuid;}
 
 }
