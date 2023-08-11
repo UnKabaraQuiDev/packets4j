@@ -4,6 +4,7 @@ out_dir=""
 bin_dir=""
 version=""
 main_class_name=""
+classp=""
 
 # Loop through the arguments
 while [ $# -gt 0 ]; do
@@ -14,6 +15,10 @@ while [ $# -gt 0 ]; do
         -main:*)
             main_class_name="${1#-main:}"
             echo "Adding Main-Class to Manifest: ${main_class_name}"
+            ;;
+        -cp:*)
+            classp="${1#-cp:}"
+            echo "Compiling with classpath: ${classp}"
             ;;
         *)
             # Unknown argument
@@ -29,7 +34,7 @@ if [ -z ${version} ]; then
   version=$(sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//' < ../src/lu/pcy113/p4j/version.txt)
   echo "No argument provided; using current version: ${version}"
 else
-  version=$1
+  #version=$1
   echo "Using provided version: ${version}"
 fi
 
@@ -55,7 +60,13 @@ fi
 find ${src_dir} -name "*.java" > "${out_dir}/sources.txt"
 
 # Compile Java files
-javac -nowarn -d "${bin_dir}" "@${out_dir}/sources.txt" 2>&1 | grep -v "^Note:"
+
+if [ -z $classp ]
+then
+    javac -nowarn -d "${bin_dir}" "@${out_dir}/sources.txt" 2>&1 | grep -v "^Note:"
+else
+    javac -nowarn -d "${bin_dir}" -cp "${classp}" "@${out_dir}/sources.txt" 2>&1 | grep -v "^Note:"
+fi
 
 echo "Compilation done to ${bin_dir}/"
 
