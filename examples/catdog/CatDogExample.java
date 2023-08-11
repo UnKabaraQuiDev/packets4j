@@ -1,9 +1,11 @@
+package catdog;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Random;
 
-import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.jb.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.Event;

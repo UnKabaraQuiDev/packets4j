@@ -1,17 +1,18 @@
-package lu.pcy113.p4j.codec.encoder;
+package guess_the_number;
 
 import java.nio.ByteBuffer;
 
-import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.jb.codec.CodecManager;
+import lu.pcy113.jb.codec.encoder.Encoder;
 
-public class LongEncoder implements Encoder<Long> {
+public class RangeEncoder implements Encoder<Range> {
 
-	public CodecManager cm;
+	public CodecManager cm = null;
     public short header;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return Long.class;}
+    public Class<?> type() {return Range.class;}
     
     public String register(CodecManager cm, short header) {
     	verifyRegister();
@@ -21,15 +22,17 @@ public class LongEncoder implements Encoder<Long> {
         
         return type().getName();
     }
-
-    public ByteBuffer encode(boolean head, Long obj) {
-        ByteBuffer bb = ByteBuffer.allocate(8 + (head ? 2 : 0));
+    
+    public ByteBuffer encode(boolean head, Range obj) {
+        ByteBuffer bb = ByteBuffer.allocate(1 + (head ? 2 : 0));
         if(head)
             bb.putShort(header);
-        bb.putLong(obj);
+        
+        bb.putInt(obj.getMin());
+        bb.putInt(obj.getMax());
         
         bb.flip();
         return bb;
     }
-	
+
 }

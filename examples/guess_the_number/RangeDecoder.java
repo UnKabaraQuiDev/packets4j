@@ -1,17 +1,18 @@
-package lu.pcy113.p4j.codec.decoder;
+package guess_the_number;
 
 import java.nio.ByteBuffer;
 
-import lu.pcy113.p4j.codec.CodecManager;
+import lu.pcy113.jb.codec.CodecManager;
+import lu.pcy113.jb.codec.decoder.Decoder;
 
-public class NullDecoder implements Decoder<Object> {
+public class RangeDecoder implements Decoder<Range> {
 
 	public CodecManager cm = null;
     public short header;
 
     public CodecManager codecManager() {return cm;}
     public short header() {return header;}
-    public Class<?> type() {return null;}
+    public Class<?> type() {return Range.class;}
     
     public String register(CodecManager cm, short header) {
     	verifyRegister();
@@ -21,15 +22,16 @@ public class NullDecoder implements Decoder<Object> {
         
         return type().getName();
     }
-
-    public Byte decode(boolean head, ByteBuffer bb) {
-        if(head) {
+    
+    @Override
+    public Range decode(boolean head, ByteBuffer bb) {
+    	if(head) {
             short nheader = bb.getShort();
             if(nheader != header)
                 Decoder.decoderNotCompatible(nheader, header);
         }
 
-        return null;
+        return new Range(bb.getInt(), bb.getInt());
     }
 	
 }

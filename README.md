@@ -5,13 +5,12 @@ A lightweights abstract TCP/IP socket & packet library.
 
 ## Content
 - [Content](#content)
+- [Dependencies](#dependencies)
 - [Packets](#packets)
 	- [Data Blocks](#data-blocks)
 	- [Packet Build Order](#packet-build-order)
 - [CodecManager](#codecmanager)
-	- [Encoder](#encoder)
-	- [Decoder](#decoder)
-	- [Common Methods for Decoders and Encoders](#common-methods-for-decoders-and-encoders)
+	
 - [EncryptionManager](#encryptionmanager)
 	- [Encryption](#encryption)
 	- [Decryption](#decryption)
@@ -20,10 +19,14 @@ A lightweights abstract TCP/IP socket & packet library.
 	- [Decompression](#decompression)
 - [Examples](#examples)
 - [Compiling](#compiling)
-- [Packages](#packages)
 
 ------
 
+## Dependencies
+This project uses the following dependencies:
+- [JBCodec](https://github.com/Poucy113/jbcodec): Java Byte Codec
+
+------
 
 ## Packets
 A `Packet<T>` is an interface that represents a packet containing data of type `T`. The generic parameter `T` specifies the type of values that the packet encode and decode.<br>
@@ -116,26 +119,7 @@ To read an incoming packet, the same operations are done in reverse.<br>Data Blo
 ------
 
 ## CodecManager
-The `CodecManager` class is responsible for managing the encoding and decoding of objects into and from `ByteBuffer` representations. It maintains a collection of registered encoders and decoders and provides methods to access and utilize them.
-1. `void register(Decoder d, short header)`: This method registers a decoder with a specified header value.<br>`register(Encoder d, short header)`: This method registers an encoder with a specified header value.
-2. `void register(Encoder e, Decoder d, short header)`: A convenience method to registers both an encoder and a decoder with the same header value.
-3. `static CodecManager base()`: This static factory method creates and initializes a CodecManager instance with a set of base encoders and decoders for basic types such as byte, short, integer, double, float, long, character, string, array, and map. It returns the initialized CodecManager instance.
-
-#### Encoder<T>
-A `Encoder<T>` is used to encode an Object `T` to a `ByteBuffer`.
-1. `ByteBuffer encoder(boolean head, T object)`: The `boolean head` specifies if the header should be included in the output. Returns the encoded object in a ByteBuffer;
-2. `int estimateSize(boolean head, T obj)`: The `boolean head` specifies if the header should be included in the estimation, for some objects the size cannot be determined and will return -1 or 2 if the header is included.
-3. `boolean confirmType(Object object)`: Returns true if the input object is an instance of the awaited type.
-
-#### Decoder<T>
-A `Decoder<T>` is used to decode a ByteBuffer input to the specified object `T`.
-1. `T decode(boolean head, ByteBuffer input)  throws DecoderNotCompatibleException`: The `boolean head` specifies if the header should be verified, throws a `DecoderNotCompatibleException` if it isn't. Returns the decoded object from a ByteBuffer;
-
-#### Common Methods for Decoders and Encoders
-1. `CodecManager codecManager()`: Returns the [CodecManager](#codecmanager) which the Decoder is registered to.
-2. `short header()`: Returns the [Header](#data-blocks) which the Decoder is registered to.
-3. `Class<?> type()`: Returns the Class which the Decoder is registered to.
-4. `void defaultRegister() throws IllegalArgumentException`: Verifies if the Decoder/Encoder was already registered, if it is it throws an `IllegalArgumentException`
+See [JBCodec's CodecManager](https://github.com/Poucy113/jbcodec#codecmanager).
 
 ------
 
@@ -167,68 +151,3 @@ To compile use `build/build.sh`; the arguments:<br>
 (Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.<br>
 (Optional) -main:{class}: Provide a class name as main class for the jar file.
 
-------
-
-## Packages
-- [x] codec
-	- [x] CodecManager
-	- [x] encoder
-		- [x] Encoder<T>
-		- [x] StringEncoder
-		- [x] DoubleEncoder
-		- [x] FloatEncoder
-		- [x] IntegerEncoder
-		- [x] CharacterEncoder
-		- [x] MapEncoder
-		- [x] ArrayEncoder
-		- [x] ShortEncoder
-		- [x] LongEncoder
-	- [x] decoder
-		- [x] Decoder<T>
-		- [x] StringDecoder
-		- [x] DoubleDecoder
-		- [x] FloatDecoder
-		- [x] IntegerDecoder
-		- [x] CharacterDecoder
-		- [x] MapDecoder
-		- [x] ArrayDecoder
-		- [x] ShortDecoder
-		- [x] LongDecoder
-- [x] crypt
-	- [x] EncryptionManager
-	- [x] encryptor
-		- [x] Encryptor
-		- [x] RawEncryptor
-		- [x] AESEncryptor
-	- [x] decryptor
-		- [x] RawDecryptor
-		- [x] AESDecryptor
-- [ ] compress
-	- [ ] CompressionManager
-	- [ ] compressor
-		- [x] Compressor
-		- [x] RawCompressor
-		- [ ] ZstdCompressor
-		- [ ] LZOCompressor
-	- [ ] decompressor
-		- [x] Decompressor
-		- [x] RawDecompressor
-		- [ ] ZstdDecompressor
-		- [ ] LZODecompressor
-- [x] packets
-	- [x] PacketManager
-	- [x] Packet
-	- [x] s2c
-		- [x] S2CPacket
-	- [x] c2s
-		- [x] C2SPacket
-- [x] socket
-	- [x] P4JInstance
-	- [x] client
-		- [x] P4JClient
-		- [x] ClientServer
-		- [x] ClientStatus
-	- [x] server
-		- [x] P4JServer
-		- [x] ServerClient
-		- [x] ServerStatus
