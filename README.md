@@ -141,7 +141,7 @@ The `CompressionManager` class is responsible for managing the compressing and d
 ------
 
 ## Examples
-See [Cat Dog Question Example](/examples/catdog/CatDogExample.md))
+See [Cat Dog Question Example](/examples/catdog/CatDogExample.md)
 
 ------
 
