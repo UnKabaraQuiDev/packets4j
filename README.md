@@ -24,7 +24,7 @@ A lightweight abstract TCP/IP socket & packet library.
 
 ## Dependencies
 This project uses the following dependencies:
-- [JBCodec](https://github.com/Poucy113/jbcodec): Java Byte Codec
+- [JBCodec](https://github.com/Poucy113/jbcodec): Java Byte Codec >= v1.0
 
 ------
 
@@ -138,7 +138,6 @@ The `CompressionManager` class is responsible for managing the compressing and d
 2. `void setCompressor(Compressor e)`, `void setDecompressor(Decompressor d)`: Setters for Compressor/Decompressor.
 3. `static CompressionManager raw()`: This static factory method creates and initializes a `CompressionManager` instance with `RawCompressor` and `RawDecompressor`, this does not compresses.
 
-
 ------
 
 ## Examples
@@ -149,5 +148,6 @@ See [Cat Dog Question Example](examples/CatDogExample.md)
 ## Compiling
 To compile use `build/build.sh`; the arguments:<br>
 (Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.<br>
-(Optional) -main:{class}: Provide a class name as main class for the jar file.
-
+(Optional) -main:{class}: Provide a class name as main class for the jar file.<br>
+(Optional) -cp:{classpath}: Provide a classpath for compiling, separated by semicolons `;`<br>
+(Optional) -regex:{regex}: File selector for files passed to the compiler, default is `*.java`<br>
