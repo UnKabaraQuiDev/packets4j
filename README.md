@@ -1,5 +1,5 @@
 # Packets4J
-A lightweights abstract TCP/IP socket & packet library.
+A lightweight abstract TCP/IP socket & packet library.
 
 ------
 
