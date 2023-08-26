@@ -1,5 +1,5 @@
 Create a Packet:
-```
+```java
 // This class is used to manage the communication between the Server → Client
 // It describes how to handle the received String[] and what value to send
 public class S2C_CatDogPacket implements S2CPacket<String[]> {
@@ -46,7 +46,7 @@ public class C2S_CatDogPacket implements C2SPacket<String> {
 The `S2CPacket` and `C2SPacket` interfaces can be implementing the same Object.
 
 Create a Server:
-```
+```java
 CodecManager serverCodec = CodecManager.base();
 EncryptionManager serverEncryption = EncryptionManager.raw();
 CompressionManager serverCompression = CompressionManager.raw();
@@ -91,14 +91,14 @@ System.out.println("Client bound");
 ```
 
 Connect the Client:
-```
+```java
 // Connect to the server
 client.connect(server.getLocalInetSocketAddress());
 System.out.println("Client connected");
 ```
 
 Send Packets:
-```
+```java
 // See "Create a Server"
 // This function gets called when a new client connects
 private void sendChoiceRequest(ServerClient client) {
@@ -144,7 +144,7 @@ And the System.out output (for a single client):
 ```	
 
 Closing the Server & Client:
-```
+```java
 client.close();
 
 server.close();
