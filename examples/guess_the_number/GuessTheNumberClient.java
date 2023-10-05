@@ -34,47 +34,47 @@ public class GuessTheNumberClient extends P4JClient {
 		System.out.println(message);
 	}
 	
-    public static void main(String[] args) throws IOException {
-    	GuessTheNumberClient client = new GuessTheNumberClient();
-    	client.bind();
-    	client.connect(InetAddress.getLocalHost(), 5000);
+	public static void main(String[] args) throws IOException {
+		GuessTheNumberClient client = new GuessTheNumberClient();
+		client.bind();
+		client.connect(InetAddress.getLocalHost(), 5000);
 
-        /*P4JClient.setPacketReceivedHandler(packet -> {
-            if (packet instanceof S2CPacket) {
-                S2CPacket s2cPacket = (S2CPacket) packet;
-                if (s2cPacket instanceof FeedbackPacket) {
-                    FeedbackPacket feedbackPacket = (FeedbackPacket) s2cPacket;
-                    System.out.println(feedbackPacket.getFeedbackMessage());
-                } else if (s2cPacket instanceof GameEndPacket) {
-                    GameEndPacket gameEndPacket = (GameEndPacket) s2cPacket;
-                    System.out.println(gameEndPacket.getEndMessage());
-                }
-            }
-        });*/
+		/*P4JClient.setPacketReceivedHandler(packet -> {
+			if (packet instanceof S2CPacket) {
+				S2CPacket s2cPacket = (S2CPacket) packet;
+				if (s2cPacket instanceof FeedbackPacket) {
+					FeedbackPacket feedbackPacket = (FeedbackPacket) s2cPacket;
+					System.out.println(feedbackPacket.getFeedbackMessage());
+				} else if (s2cPacket instanceof GameEndPacket) {
+					GameEndPacket gameEndPacket = (GameEndPacket) s2cPacket;
+					System.out.println(gameEndPacket.getEndMessage());
+				}
+			}
+		});*/
 
-        Scanner scanner = new Scanner(System.in);
-        while (true) {
-            String input = scanner.nextLine();
+		Scanner scanner = new Scanner(System.in);
+		while (true) {
+			String input = scanner.nextLine();
 
-            if (input.equals("quit")) {
-                client.gameDisconnect();
-                break;
-            }else if (input.equals("start")) {
-                client.write(new StartGamePacket());
-                continue;
-            }
+			if (input.equals("quit")) {
+				client.gameDisconnect();
+				break;
+			}else if (input.equals("start")) {
+				client.write(new StartGamePacket());
+				continue;
+			}
 
-            int guessedNumber;
-            try {
-                guessedNumber = Integer.parseInt(input);
-            } catch (NumberFormatException e) {
-                System.out.println("Invalid input. Please enter a number or 'quit' to exit.");
-                continue;
-            }
+			int guessedNumber;
+			try {
+				guessedNumber = Integer.parseInt(input);
+			} catch (NumberFormatException e) {
+				System.out.println("Invalid input. Please enter a number or 'quit' to exit.");
+				continue;
+			}
 
-            GuessPacket guessPacket = new GuessPacket(guessedNumber);
-            client.write(guessPacket);
-        }
-    }
+			GuessPacket guessPacket = new GuessPacket(guessedNumber);
+			client.write(guessPacket);
+		}
+	}
 
 }

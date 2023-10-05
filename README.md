@@ -34,9 +34,9 @@ When working with packets, the T parameter allows you to define the specific typ
 The packet construction pattern consists of several elements that are used to construct a packet:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
-| int  | 4B     |LENGTH| The total Packet length, excluding the 4 bytes used to store the length itself.|
-| int  | 4B     | ID   | The id of the Packet.|
-| x    |Variable| DATA | The [data block(s)](#data-blocks) included in the packet.|
+| int  | 4B	 |LENGTH| The total Packet length, excluding the 4 bytes used to store the length itself.|
+| int  | 4B	 | ID   | The id of the Packet.|
+| x	|Variable| DATA | The [data block(s)](#data-blocks) included in the packet.|
 
 The interface Packet<T> implements 2 subinterfaces: `S2CPacket<T>` and `C2SPacket<T>`, to separate `Server→Client` and `Client→Server` communication. <br>
 The `S2CPacket` and `C2SPacket` could be registered with the same id as long as there is an outgoing (serverside) and an ingoing (clientside) Packet that take the same type of Object as input.<br>
@@ -65,30 +65,30 @@ Implementing `S2CPacket` and `C2SPacket` in the same subclass for the client and
 The construction of a data block varies depending of the generic argument passed `T`, basic data blocks are defined as follows:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
-|short | 2B     |HEADER| The header used to decode the following data, see [CodecManager](#codecmanager).|
-| x    |variable| DATA | The data of the block.|
+|short | 2B	 |HEADER| The header used to decode the following data, see [CodecManager](#codecmanager).|
+| x	|variable| DATA | The data of the block.|
 
 This definition is valable for generic types such as: Byte, Short, Integer, Double, Float, Long and Character, because their size is known. The header can be omitted in some cases, such as in arrays or maps where multiple following elements use the same header which is specified in the parent data block<br><br>
 Data blocks for types with variable size such as String, Arrays, Lists and Maps have a different construction:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
-|short | 2B     |HEADER| The header used to decode the following data, see [CodecManager](#codecmanager).|
-|  int | 4B     |LENGTH| The length of the following data, see [CodecManager](#codecmanager).|
-| x    |variable| DATA | The data of the block.|
+|short | 2B	 |HEADER| The header used to decode the following data, see [CodecManager](#codecmanager).|
+|  int | 4B	 |LENGTH| The length of the following data, see [CodecManager](#codecmanager).|
+| x	|variable| DATA | The data of the block.|
 
 Data blocks can be concatonated inside each other, for example a String[] (String array) is described this way:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
-|short | 2B     |HEADER| The Array header.|
-|int   | 4B     |LENGTH| The count of elements contained int the array.|
-|short | 2B     |HEADER| The String header.|
-| x    |variable| DATA | The data of the block.|
+|short | 2B	 |HEADER| The Array header.|
+|int   | 4B	 |LENGTH| The count of elements contained int the array.|
+|short | 2B	 |HEADER| The String header.|
+| x	|variable| DATA | The data of the block.|
 
 This specific data is constructed this way:
 | TYPE | LENGTH | NAME | DESCRIPTION |
 |------|--------|------|-------------|
-|  int | 4B     |LENGTH| The length of the following String.|
-| x    | LENGTH | DATA | The bytes of the String.|
+|  int | 4B	 |LENGTH| The length of the following String.|
+| x	| LENGTH | DATA | The bytes of the String.|
 
 Note that the Header is dropped because it is specified after the Array's length; the same decoder is used for all of the elements contained in the array.
 

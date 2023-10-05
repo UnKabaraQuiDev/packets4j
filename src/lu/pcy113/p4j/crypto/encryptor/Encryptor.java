@@ -4,6 +4,6 @@ import java.nio.ByteBuffer;
 
 public interface Encryptor {
 
-    ByteBuffer encrypt(ByteBuffer input) throws Exception;
+	ByteBuffer encrypt(ByteBuffer input) throws Exception;
 
 }

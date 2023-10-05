@@ -144,7 +144,7 @@ public class CatDogExample {
 		}
 
 		// Gets called when a Server receives this packet from a connected Client
-	    public void serverRead(ServerClient sclient, String obj) {
+		public void serverRead(ServerClient sclient, String obj) {
 			System.out.println("Client answered: "+obj);
 		}
 	}

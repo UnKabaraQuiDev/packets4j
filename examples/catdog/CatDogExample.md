@@ -38,7 +38,7 @@ public class C2S_CatDogPacket implements C2SPacket<String> {
 	}
 
 	// Gets called when a Server receives this packet from a connected Client
-    public void serverRead(ServerClient sclient, String obj)() {
+	public void serverRead(ServerClient sclient, String obj)() {
 		System.out.println("Client answered: "+obj);
 	}
 }
@@ -118,29 +118,29 @@ In this example, the server-client packet exchange should look like this:
 | ORDER | DIR | TYPE | OBJECT | VALUE | FUNCTION |
 |------|-----|------|--------|-------|-----------|
 | 1. | send | S2C | String[] | input → {"Cat", "or", "Dog"} | serverWrite(ServerClient) → String[] | 
-| 2. | read | S2C | String[] | input                        | clientRead(P4JClient, String[]) | 
-| 3. | send | C2S | String   | choice → input[random]       | clientWrite(P4JClient) → String | 
-| 4. | read | C2S | String   | choice                       | serverRead(ServerClient, String) | 
+| 2. | read | S2C | String[] | input						| clientRead(P4JClient, String[]) | 
+| 3. | send | C2S | String   | choice → input[random]	   | clientWrite(P4JClient) → String | 
+| 4. | read | C2S | String   | choice					   | serverRead(ServerClient, String) | 
 
 And the System.out output (for a single client):
 ```
-(Server): Server bound                           // bind
+(Server): Server bound						   // bind
 (Server): Server listening and accepting clients // setAccepting
 
-(Client): Client bound               // bind
-(Client): Client connected           // connect
+(Client): Client bound			   // bind
+(Client): Client connected		   // connect
 (Server): Client connected to server // sendChoiceRequest
 
 // S2C
-(Server): Asked to client    // serverWrite
-(Server): true               // the packet was sent successfully
+(Server): Asked to client	// serverWrite
+(Server): true			   // the packet was sent successfully
 (Client): Question received: // clientRead
-(Client): [Dog, or, Cat]     // |
+(Client): [Dog, or, Cat]	 // |
 
 // C2S
-(Client): Choice prepared: Dog      // constructor
+(Client): Choice prepared: Dog	  // constructor
 (Client): Responding to server: Dog // clientWrite
-(Server): Client answered: Dog      // serverRead
+(Server): Client answered: Dog	  // serverRead
 ```	
 
 Closing the Server & Client:

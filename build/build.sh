@@ -11,29 +11,29 @@ package="lu/pcy113/p4j"
 
 # Loop through the arguments
 while [ $# -gt 0 ]; do
-    case "$1" in
-        -version:*)
-            version="${1#-version:}"
-            ;;
-        -main:*)
-            main_class_name="${1#-main:}"
-            echo "Adding Main-Class to Manifest: ${main_class_name}"
-            ;;
-        -cp:*)
-            classp="${1#-cp:}"
-            echo "Compiling with classpath: ${classp}"
-            ;;
-        -regex:*)
-            rgx="${1#-rgx:}"
-            echo "File Selector set to: ${rgx}"
-            ;;
-        *)
-            # Unknown argument
-            echo "Unknown argument: $1; use -version:X, -main:X, -cp:X, -regex:X; default regex:*.java"
-            exit 1
-            ;;
-    esac
-    shift
+	case "$1" in
+		-version:*)
+			version="${1#-version:}"
+			;;
+		-main:*)
+			main_class_name="${1#-main:}"
+			echo "Adding Main-Class to Manifest: ${main_class_name}"
+			;;
+		-cp:*)
+			classp="${1#-cp:}"
+			echo "Compiling with classpath: ${classp}"
+			;;
+		-regex:*)
+			rgx="${1#-rgx:}"
+			echo "File Selector set to: ${rgx}"
+			;;
+		*)
+			# Unknown argument
+			echo "Unknown argument: $1; use -version:X, -main:X, -cp:X, -regex:X; default regex:*.java"
+			exit 1
+			;;
+	esac
+	shift
 done
 
 # Check if version is provided
@@ -48,20 +48,20 @@ fi
 
 if [ -z ${rgx} ];
 then
-    rgx="^((?!PrivateMain|txt$).)*$"
-    echo "Using default file selector for compilation: ${rgx}"
+	rgx="^((?!PrivateMain|txt$).)*$"
+	echo "Using default file selector for compilation: ${rgx}"
 else
-    echo "Using provided file selector for compilation: ${rgx}"
+	echo "Using provided file selector for compilation: ${rgx}"
 fi
 
 function check {
-    if [ $1 -eq 0 ];
-    then
-        echo $2
-    else
-        echo $3
-        exit 1
-    fi
+	if [ $1 -eq 0 ];
+	then
+		echo $2
+	else
+		echo $3
+		exit 1
+	fi
 }
 
 src_dir="../src/"
@@ -93,11 +93,11 @@ check $? "Sources collected from ${src_dir} to ${out_dir}" "Couldn't find ${rgx}
 # Compile Java files
 if [ -z $classp ]
 then
-    javac -nowarn -d "${bin_dir}" "@${out_dir}/sources.txt" 2>&1
-    check $? "Compilation done to ${bin_dir}/" "Compilation failed. Aborted."
+	javac -nowarn -d "${bin_dir}" "@${out_dir}/sources.txt" 2>&1
+	check $? "Compilation done to ${bin_dir}/" "Compilation failed. Aborted."
 else
-    javac -nowarn -d "${bin_dir}" -cp "${classp}" "@${out_dir}/sources.txt" 2>&1
-    check $? "Compilation done to ${bin_dir}/" "Compilation failed. Aborted."
+	javac -nowarn -d "${bin_dir}" -cp "${classp}" "@${out_dir}/sources.txt" 2>&1
+	check $? "Compilation done to ${bin_dir}/" "Compilation failed. Aborted."
 fi
 
 # Add to JAR file

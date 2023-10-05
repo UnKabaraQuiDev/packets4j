@@ -83,7 +83,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 						// Register the client socket channel with the selector for reading
 						clientChannel.register(serverSocketSelector, SelectionKey.OP_READ);
 
-						clientManager.accept(clientChannel);
+						clientManager.register(clientChannel);
 					}else if(key.isReadable()) {
 						// Read data from a client socket channel
 						SocketChannel clientChannel = (SocketChannel) key.channel();

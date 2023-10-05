@@ -19,7 +19,7 @@ public class ClientManager {
 		this.server = server;
 	}
 	
-	public void accept(SocketChannel sc) {
+	public void register(SocketChannel sc) {
 		ServerClient sclient = new ServerClient(sc, this.server);
 		registerClient(sclient);
 		server.listenersConnected.handle(new ClientInstanceConnectedEvent(sclient, server));
