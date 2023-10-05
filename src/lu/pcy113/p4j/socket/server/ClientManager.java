@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.Function;
 
 import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
 
@@ -13,14 +14,20 @@ public class ClientManager {
 	
 	private P4JServer server;
 	
+	private Function<SocketChannel, ServerClient> clientCreationCallback;
 	private HashMap<SocketChannel, ServerClient> clients = new HashMap<>();
 	
 	public ClientManager(P4JServer server) {
-		this.server = server;
+		this(server, (SocketChannel sc) -> new ServerClient(sc, server));
 	}
 	
+	public ClientManager(P4JServer server, Function<SocketChannel, ServerClient> clientCreationCallback) {
+		this.server = server;
+		this.clientCreationCallback = clientCreationCallback;
+	}
+
 	public void register(SocketChannel sc) {
-		ServerClient sclient = new ServerClient(sc, this.server);
+		ServerClient sclient = clientCreationCallback.apply(sc);
 		registerClient(sclient);
 		server.listenersConnected.handle(new ClientInstanceConnectedEvent(sclient, server));
 	}

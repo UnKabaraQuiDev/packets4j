@@ -10,6 +10,7 @@ import java.util.UUID;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
+import lu.pcy113.p4j.socket.client.P4JClientException;
 import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
 public class ServerClient implements P4JClientInstance {
@@ -100,7 +101,7 @@ public class ServerClient implements P4JClientInstance {
 	
 	public void close() {
 		if(serverClientStatus.equals(ServerClientstatus.CLOSED) || serverClientStatus.equals(ServerClientstatus.PRE))
-			throw new P4JServerException("Cannot close not started client socket.");
+			throw new P4JClientException("Cannot close not started client socket.");
 		
 		try {
 			serverClientStatus = ServerClientstatus.CLOSING;

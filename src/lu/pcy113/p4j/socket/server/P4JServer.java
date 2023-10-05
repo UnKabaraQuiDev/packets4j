@@ -156,9 +156,11 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	public EncryptionManager getEncryption() {return encryption;}
 	public CompressionManager getCompression() {return compression;}
 	public PacketManager getPackets() {return packets;}
+	public ClientManager getClientManager() {return clientManager;}
 	public void setCodec(CodecManager codec) {this.codec = codec;}
 	public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
 	public void setCompression(CompressionManager compression) {this.compression = compression;}
 	public void setPackets(PacketManager packets) {this.packets = packets;}
+	public void setClientManager(ClientManager clientManager) {this.clientManager = clientManager;}
 
 }
