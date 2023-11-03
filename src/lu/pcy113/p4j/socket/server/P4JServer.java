@@ -13,7 +13,7 @@ import java.util.Set;
 import lu.pcy113.jb.codec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.Listeners;
+import lu.pcy113.p4j.events.EventQueueConsumer;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
@@ -23,8 +23,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 
 	private ServerStatus serverStatus = ServerStatus.PRE;
 	
-	public Listeners listenersClosed = new Listeners();
-	public Listeners listenersConnected = new Listeners();
+	public EventQueueConsumer events = EventQueueConsumer.IGNORE;
 	
 	private CodecManager codec;
 	private EncryptionManager encryption;
@@ -62,7 +61,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	
 		//super.start();
 	}
-
+	
 	public void run() {
 		try {
 			while(serverStatus.equals(ServerStatus.ACCEPTING)) {
@@ -88,9 +87,10 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 						// Read data from a client socket channel
 						SocketChannel clientChannel = (SocketChannel) key.channel();
 						clientManager.get(clientChannel).read();
+						
 						if(key.isWritable()) {
 							clientChannel.socket().getOutputStream().flush();
-							//System.out.println("server#read: flushed");
+							System.out.println("server#read: flushed");
 						}
 					}
 
@@ -151,16 +151,22 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	public ServerStatus getServerStatus() {return serverStatus;}
 	public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
 	public Collection<ServerClient> getConnectedClients() {return clientManager.allClients();}
-
+	public int getPort() {return (serverSocketChannel != null && serverSocketChannel.socket() != null ?
+			serverSocketChannel.socket().getLocalPort() :
+			-1);}
+	
 	public CodecManager getCodec() {return codec;}
 	public EncryptionManager getEncryption() {return encryption;}
 	public CompressionManager getCompression() {return compression;}
 	public PacketManager getPackets() {return packets;}
 	public ClientManager getClientManager() {return clientManager;}
+	public EventQueueConsumer getEventQueueConsumer() {return events;}
+	
 	public void setCodec(CodecManager codec) {this.codec = codec;}
 	public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
 	public void setCompression(CompressionManager compression) {this.compression = compression;}
 	public void setPackets(PacketManager packets) {this.packets = packets;}
 	public void setClientManager(ClientManager clientManager) {this.clientManager = clientManager;}
+	public void setEventQueueConsumer(EventQueueConsumer events) {this.events = events;}
 
 }

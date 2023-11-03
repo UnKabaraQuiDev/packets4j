@@ -9,9 +9,10 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 import lu.pcy113.jb.codec.CodecManager;
+import lu.pcy113.jb.utils.ArrayUtils;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.Listeners;
+import lu.pcy113.p4j.events.EventQueueConsumer;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -24,8 +25,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	private ClientStatus clientStatus = ClientStatus.PRE;
 
-	public Listeners listenersClosed = new Listeners();
-	public Listeners listenersConnected = new Listeners();
+	public EventQueueConsumer events = EventQueueConsumer.IGNORE;
 	
 	private CodecManager codec;
 	private EncryptionManager encryption;
@@ -63,7 +63,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		
 		super.start();
 		
-		listenersConnected.handle(new ClientInstanceConnectedEvent(this, clientServer));
+		events.handle(new ClientInstanceConnectedEvent(this, clientServer));
 	}
 	public void connect(InetSocketAddress isa) throws IOException {
 		this.connect(isa.getAddress(), isa.getPort());
@@ -122,6 +122,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		try {
 			Object obj = packet.clientWrite(this);
 			ByteBuffer content = codec.encode(obj);
+			System.err.println("client sent: "+ArrayUtils.byteBufferToHexString(content));
 			content = encryption.encrypt(content);
 			content = compression.compress(content);
 	
@@ -152,7 +153,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			clientSocketChannel.close();
 			clientStatus = ClientStatus.CLOSED;
 			
-			listenersClosed.handle(new ClosedChannelEvent(null, this));
+			events.handle(new ClosedChannelEvent(null, this));
 		}catch(IOException e) {
 			handleException("close", e);
 		}
@@ -170,14 +171,20 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	public ClientStatus getClientStatus() {return clientStatus;}
 	public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
 	public ClientServer getClientServer() {return clientServer;}
+	public int getPort() {return (clientSocketChannel != null && clientSocketChannel.socket() != null ?
+			clientSocketChannel.socket().getLocalPort() :
+			-1);}
 
 	public CodecManager getCodec() {return codec;}
 	public EncryptionManager getEncryption() {return encryption;}
 	public CompressionManager getCompression() {return compression;}
 	public PacketManager getPackets() {return packets;}
+	public EventQueueConsumer getEventQueueConsumer() {return events;}
+	
 	public void setCodec(CodecManager codec) {this.codec = codec;}
 	public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
 	public void setCompression(CompressionManager compression) {this.compression = compression;}
 	public void setPackets(PacketManager packets) {this.packets = packets;}
+	public void setEventQueueConsumer(EventQueueConsumer events) {this.events = events;}
 	
 }

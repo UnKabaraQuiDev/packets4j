@@ -6,8 +6,11 @@ import java.util.Arrays;
 import java.util.Random;
 
 import lu.pcy113.jb.codec.CodecManager;
+import lu.pcy113.jb.codec.decoder.ArrayDecoder;
+import lu.pcy113.jb.codec.encoder.ArrayEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.AsyncEventQueueConsumer;
 import lu.pcy113.p4j.events.Event;
 import lu.pcy113.p4j.events.Listener;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
@@ -27,15 +30,19 @@ public class CatDogExample {
 		// CLEATE A SERVER
 		
 		CodecManager serverCodec = CodecManager.base();
+		serverCodec.register(new ArrayEncoder(), new ArrayDecoder(), (short) 11);
 		EncryptionManager serverEncryption = EncryptionManager.raw();
 		CompressionManager serverCompression = CompressionManager.raw();
 		server = new P4JServer(serverCodec, serverEncryption, serverCompression);
+		server.setEventQueueConsumer(new AsyncEventQueueConsumer());
 		
 		// Attach a listener to handle new connected clients
-		server.listenersConnected.add(new Listener() {
+		server.events.addListener(new Listener() {
 			@Override
-			public void handle(Event event) {
-				sendChoiceRequest((ServerClient) ((ClientInstanceConnectedEvent) event).getClient()); // See "Send Packets"
+			public void handle(Event event) { // conntected
+				System.out.println("Server event: "+event.getClass().getSimpleName());
+				if(event instanceof ClientInstanceConnectedEvent)
+					sendChoiceRequest((ServerClient) ((ClientInstanceConnectedEvent) event).getClient()); // See "Send Packets"
 			}
 		});
 
@@ -48,16 +55,18 @@ public class CatDogExample {
 
 		// Bind to the local port
 		server.bind(new InetSocketAddress(8090));
-		System.out.println("Server bound");
+		System.out.println("Server bound to port: "+server.getPort());
 		
 		// Set as listening and accepting clients
 		server.setAccepting();
 		System.out.println("Server listening and accepting clients");
 		
 		
+		
 		// CREATE A CLIENT
 		
 		CodecManager clientCodec = CodecManager.base();
+		clientCodec.register(new ArrayEncoder(), new ArrayDecoder(), (short) 11);
 		EncryptionManager clientEncryption = EncryptionManager.raw();
 		CompressionManager clientCompression = CompressionManager.raw();
 		client = new P4JClient(clientCodec, clientEncryption, clientCompression);
@@ -68,17 +77,21 @@ public class CatDogExample {
 
 		// Bind without any argument takes a free port, a specific port can be passed as argument
 		client.bind();
-		System.out.println("Client bound");
+		System.out.println("Client bound to port: "+client.getPort());
+		
 		
 		
 		// CONNECT THE CLIENT TO THE SERVER
 		
-		// Connect to the server
 		client.connect(server.getLocalInetSocketAddress());
 		System.out.println("Client connected");
 		
-		Thread.sleep(1000);
+		// The server will send a packet to the client
+		// as soon as the client connects
+		// See "Create a Server"
 		
+		
+		Thread.sleep(1000);
 		
 		client.close();
 		server.close();
@@ -106,7 +119,7 @@ public class CatDogExample {
 	public static class S2C_CatDogPacket implements S2CPacket<Object[]> {
 		
 		// Gets called when a Client receives this packet from the connected server
-		public void clientRead(P4JClient client, Object[] input) {
+		public void clientRead(P4JClient client, Object[]input) {
 			System.out.println("Question received: ");
 			System.out.println(Arrays.toString(input));
 			Random r = new Random();
@@ -118,7 +131,7 @@ public class CatDogExample {
 
 		// Gets called when using ServerClient.write(new S2C_CatDogPacket())
 		// Returns the value to be sent
-		public String[] serverWrite(ServerClient client) {
+		public Object[] serverWrite(ServerClient client) {
 			System.out.println("Asked to client");
 			return new String[] {"Dog", "or", "Cat"};
 		}

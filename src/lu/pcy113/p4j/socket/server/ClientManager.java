@@ -29,7 +29,7 @@ public class ClientManager {
 	public void register(SocketChannel sc) {
 		ServerClient sclient = clientCreationCallback.apply(sc);
 		registerClient(sclient);
-		server.listenersConnected.handle(new ClientInstanceConnectedEvent(sclient, server));
+		server.events.handle(new ClientInstanceConnectedEvent(sclient, server));
 	}
 
 	public ServerClient get(SocketChannel clientChannel) {

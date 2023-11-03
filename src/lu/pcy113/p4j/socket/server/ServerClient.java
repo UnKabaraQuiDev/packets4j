@@ -7,6 +7,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
+import lu.pcy113.jb.utils.ArrayUtils;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
@@ -74,6 +75,7 @@ public class ServerClient implements P4JClientInstance {
 	public boolean write(S2CPacket packet) {
 		try {
 			ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
+			System.err.println("server sent: "+ArrayUtils.byteBufferToHexString(content));
 			content = server.getEncryption().encrypt(content);
 			content = server.getCompression().compress(content);
 			
@@ -108,7 +110,7 @@ public class ServerClient implements P4JClientInstance {
 			socketChannel.close();
 			serverClientStatus = ServerClientstatus.CLOSED;
 			
-			server.listenersClosed.handle(new ClosedChannelEvent(null, this));
+			server.events.handle(new ClosedChannelEvent(null, this));
 		}catch(IOException e) {
 			handleException("close", e);
 		}

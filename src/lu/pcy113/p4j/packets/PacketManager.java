@@ -52,9 +52,9 @@ public class PacketManager {
 		try {
 			return pair.getConstructor().newInstance();
 		}catch(NoSuchMethodException e) {
-			throw new PacketInstanceException("No-arg constructor for Packet "+pair.getName()+", not found.");
+			throw new PacketInstanceException("0-arg constructor for Packet "+pair.getName()+", not found.");
 		}catch(InstantiationException e) {
-			throw new PacketInstanceException("Packet "+pair.getName()+", cannot be abstract.");
+			throw new PacketInstanceException("Packet "+pair.getName()+", cannot be abstract and must have a 0-arg constructor.");
 		}catch(InvocationTargetException | IllegalAccessException e) {
 			throw new PacketInstanceException(e, "Exception occured during initialization");
 		}
