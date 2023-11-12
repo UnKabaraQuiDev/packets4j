@@ -47,10 +47,10 @@ public class CatDogExample {
 		});
 
 		// Register incoming and outdoing packets
-		// Because S2C packet takes a String[] and C2S packet takes a String
 		// We can't use the same id, because the classes haven't the same argument
-		// registerPacket() is a shortcut for getPackets().register()
+		// S2C packet takes a Object[] and C2S packet takes a String
 		server.getPackets().register(C2S_CatDogPacket.class, 1);
+		// registerPacket() is a shortcut for getPackets().register()
 		server.registerPacket(S2C_CatDogPacket.class, 2);
 
 		// Bind to the local port
@@ -103,7 +103,7 @@ public class CatDogExample {
 		System.out.println("Client connected to server");
 		
 		// Send a packet to the newly connected client
-		System.out.println(client.write(new S2C_CatDogPacket()));
+		System.out.println("Packet sent to client: "+client.write(new S2C_CatDogPacket()));
 		
 		// OR
 		
