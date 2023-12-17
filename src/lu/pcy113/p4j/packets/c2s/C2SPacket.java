@@ -7,6 +7,7 @@ import lu.pcy113.p4j.socket.server.ServerClient;
 public interface C2SPacket<T> extends Packet {
 
 	T clientWrite(P4JClient client);
+
 	void serverRead(ServerClient sclient, T obj);
 
 }

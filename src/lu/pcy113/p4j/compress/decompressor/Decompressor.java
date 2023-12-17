@@ -5,5 +5,5 @@ import java.nio.ByteBuffer;
 public interface Decompressor {
 
 	ByteBuffer decompress(ByteBuffer bb) throws Exception;
-	
+
 }

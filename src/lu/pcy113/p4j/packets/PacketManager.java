@@ -21,57 +21,60 @@ public class PacketManager {
 	private HashMap<String, Integer> outPackets = new HashMap<>();
 
 	public void register(Class<?> p, int id) {
-		if(type instanceof P4JServer) {
-			if(C2SPacket.class.isAssignableFrom(p)) {
+		if (type instanceof P4JServer) {
+			if (C2SPacket.class.isAssignableFrom(p)) {
 				inPackets.put(id, (Class<Packet>) p);
 			}
-			if(S2CPacket.class.isAssignableFrom(p)) {
+			if (S2CPacket.class.isAssignableFrom(p)) {
 				outPackets.put(p.getName(), id);
 			}
-		}else if(type instanceof P4JClient) {
-			if(S2CPacket.class.isAssignableFrom(p)) {
+		} else if (type instanceof P4JClient) {
+			if (S2CPacket.class.isAssignableFrom(p)) {
 				inPackets.put(id, (Class<Packet>) p);
 			}
-			if(C2SPacket.class.isAssignableFrom(p)) {
+			if (C2SPacket.class.isAssignableFrom(p)) {
 				outPackets.put(p.getName(), id);
 			}
 		}
 	}
-	
+
 	public int getId(Class<?> p) {
-		if(!outPackets.containsKey(p.getName()))
-			throw new UnknownPacketException("Packet: "+p.getName()+"; not registered in PacketManager.");
+		if (!outPackets.containsKey(p.getName()))
+			throw new UnknownPacketException("Packet: " + p.getName() + "; not registered in PacketManager.");
 		return outPackets.get(p.getName());
 	}
-	
+
 	public Packet packetInstance(int id) throws UnknownPacketException, PacketInstanceException {
-		if(!inPackets.containsKey(id))
-			throw new UnknownPacketException("Packet with id: "+id+"; not registered in PacketManager");
-		
+		if (!inPackets.containsKey(id))
+			throw new UnknownPacketException("Packet with id: " + id + "; not registered in PacketManager");
+
 		Class<Packet> pair = inPackets.get(id);
 		try {
 			return pair.getConstructor().newInstance();
-		}catch(NoSuchMethodException e) {
-			throw new PacketInstanceException("0-arg constructor for Packet "+pair.getName()+", not found.");
-		}catch(InstantiationException e) {
-			throw new PacketInstanceException("Packet "+pair.getName()+", cannot be abstract and must have a 0-arg constructor.");
-		}catch(InvocationTargetException | IllegalAccessException e) {
+		} catch (NoSuchMethodException e) {
+			throw new PacketInstanceException("0-arg constructor for Packet " + pair.getName() + ", not found.");
+		} catch (InstantiationException e) {
+			throw new PacketInstanceException(
+					"Packet " + pair.getName() + ", cannot be abstract and must have a 0-arg constructor.");
+		} catch (InvocationTargetException | IllegalAccessException e) {
 			throw new PacketInstanceException(e, "Exception occured during initialization");
 		}
 	}
+
 	public Packet packetInstance(Class<Packet> cp) throws UnknownPacketException, PacketInstanceException {
 		return packetInstance(cp.getName());
 	}
+
 	public Packet packetInstance(String cp) throws UnknownPacketException, PacketInstanceException {
-		if(!outPackets.containsKey(cp))
-			throw new UnknownPacketException("Packet with name: "+cp+"; not registered in PacketManager");
-		
+		if (!outPackets.containsKey(cp))
+			throw new UnknownPacketException("Packet with name: " + cp + "; not registered in PacketManager");
+
 		return packetInstance(outPackets.get(cp));
 	}
-	
+
 	@Override
 	public String toString() {
-		return "in: "+inPackets+"\nout: "+outPackets;
+		return "in: " + inPackets + "\nout: " + outPackets;
 	}
 
-} 
+}

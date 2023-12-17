@@ -18,7 +18,7 @@ public class AESEncryptor implements Encryptor {
 		try {
 			secretKey = new SecretKeySpec(key, ALGORITHM);
 			cipher = Cipher.getInstance(ALGORITHM);
-		}catch(NoSuchAlgorithmException e) {
+		} catch (NoSuchAlgorithmException e) {
 			/* probably impossible */
 		}
 	}

@@ -5,8 +5,9 @@ public class UnknownPacketException extends RuntimeException {
 	public UnknownPacketException(String msg) {
 		super(msg);
 	}
+
 	public UnknownPacketException(int id) {
-		super(""+id);
+		super("" + id);
 	}
-	
+
 }

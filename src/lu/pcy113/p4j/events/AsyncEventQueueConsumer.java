@@ -6,73 +6,77 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class AsyncEventQueueConsumer extends Thread implements EventQueueConsumer {
-	
+
 	private Object lock;
 	private Queue<Event> events;
 	private List<Listener> listeners = new ArrayList<Listener>();
-	
+
 	public AsyncEventQueueConsumer() {
 		this(false);
 	}
+
 	public AsyncEventQueueConsumer(boolean daemon) {
 		super("AsyncEventQueueConsumer");
 		super.setDaemon(daemon);
-		
-		lock = new Object();
-		events = new ConcurrentLinkedQueue<>();
-		
+
+		this.lock = new Object();
+		this.events = new ConcurrentLinkedQueue<>();
+
 		super.start();
 	}
-	
+
 	@Override
 	public void handle(Event event) {
-        synchronized (lock) {
-            events.add(event);
-            lock.notify(); // Notify the thread that an event is appended
-        }
-    }
+		synchronized (this.lock) {
+			this.events.add(event);
+			this.lock.notify(); // Notify the thread that an event is appended
+		}
+	}
 
-    @Override
-    public void run() {
-        while (true) {
-            Event currentEvent;
-            synchronized (lock) {
-                while (events.isEmpty()) {
-                    try {
-                        lock.wait(); // Wait if the queue is empty
-                    } catch (InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                }
-                currentEvent = events.poll(); // Get the next event to process
-            }
+	@Override
+	public void run() {
+		while (true) {
+			Event currentEvent;
+			synchronized (this.lock) {
+				while (this.events.isEmpty()) {
+					try {
+						this.lock.wait(); // Wait if the queue is empty
+					} catch (InterruptedException e) {
+						Thread.currentThread().interrupt();
+						return;
+					}
+				}
+				currentEvent = this.events.poll(); // Get the next event to process
+			}
 
-            processEvent(currentEvent);
-        }
-    }
+			this.processEvent(currentEvent);
+		}
+	}
 
 	private void processEvent(Event e) {
-		for(Listener l : listeners) {
+		for (Listener l : this.listeners) {
 			l.handle(e);
 		}
 	}
 
 	@Override
 	public List<Listener> getListeners() {
-		return listeners;
+		return this.listeners;
 	}
+
 	@Override
 	public void addListener(Listener list) {
-		listeners.add(list);
+		this.listeners.add(list);
 	}
+
 	@Override
 	public void removeListener(Listener list) {
-		listeners.remove(list);
+		this.listeners.remove(list);
 	}
+
 	@Override
 	public void removeListener(int i) {
-		listeners.remove(i);
+		this.listeners.remove(i);
 	}
 
 }

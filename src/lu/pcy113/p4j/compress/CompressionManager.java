@@ -16,17 +16,33 @@ public class CompressionManager {
 		this.compressor = e;
 		this.decompressor = d;
 	}
-	
+
 	public static final CompressionManager raw() {
 		return new CompressionManager(new RawCompressor(), new RawDecompressor());
 	}
 
-	public ByteBuffer decompress(ByteBuffer b) throws Exception {return decompressor.decompress(b);}
-	public ByteBuffer compress(ByteBuffer b) throws Exception {return compressor.compress(b);}
+	public ByteBuffer decompress(ByteBuffer b) throws Exception {
+		return decompressor.decompress(b);
+	}
 
-	public Compressor getCompressor() {return compressor;}
-	public Decompressor getDecompressor() {return decompressor;}
-	public void setCompressor(Compressor compressor) {this.compressor = compressor;}
-	public void setDecompressor(Decompressor decompressor) {this.decompressor = decompressor;}
-	
+	public ByteBuffer compress(ByteBuffer b) throws Exception {
+		return compressor.compress(b);
+	}
+
+	public Compressor getCompressor() {
+		return compressor;
+	}
+
+	public Decompressor getDecompressor() {
+		return decompressor;
+	}
+
+	public void setCompressor(Compressor compressor) {
+		this.compressor = compressor;
+	}
+
+	public void setDecompressor(Decompressor decompressor) {
+		this.decompressor = decompressor;
+	}
+
 }
