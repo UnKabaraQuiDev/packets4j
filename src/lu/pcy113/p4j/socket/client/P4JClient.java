@@ -9,17 +9,18 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 
 import lu.pcy113.jb.codec.CodecManager;
-import lu.pcy113.jb.utils.ArrayUtils;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.ClientConnectedEvent;
+import lu.pcy113.p4j.events.ClientReadPacketEvent;
+import lu.pcy113.p4j.events.ClientWritePacketEvent;
+import lu.pcy113.p4j.events.ClosedChannelEvent;
 import lu.pcy113.p4j.events.EventQueueConsumer;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
-import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
 public class P4JClient extends Thread implements P4JInstance, P4JClientInstance {
 
@@ -68,7 +69,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 		super.start();
 
-		events.handle(new ClientInstanceConnectedEvent(this, clientServer));
+		events.handle(new ClientConnectedEvent(this, clientServer));
 	}
 
 	public void connect(InetSocketAddress isa) throws IOException {
@@ -120,8 +121,12 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			Object obj = codec.decode(content);
 
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
+
+			events.handle(new ClientReadPacketEvent(this, packet, packets.getClass(id)));
+
 			packet.clientRead(this, obj);
 		} catch (Exception e) {
+			events.handle(new ClientReadPacketEvent(this, id, e));
 			handleException("read_handleRawPacket", e);
 		}
 	}
@@ -130,7 +135,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		try {
 			Object obj = packet.clientWrite(this);
 			ByteBuffer content = codec.encode(obj);
-			System.err.println("client sent: " + ArrayUtils.byteBufferToHexString(content));
+			// System.err.println("client sent: " +
+			// ArrayUtils.byteBufferToHexString(content));
 			content = encryption.encrypt(content);
 			content = compression.compress(content);
 
@@ -144,8 +150,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 			clientSocketChannel.write(bb);
 
+			events.handle(new ClientWritePacketEvent(this, packet));
+
 			return true;
 		} catch (Exception e) {
+			events.handle(new ClientWritePacketEvent(this, packet, e));
 			handleException("write", e);
 			return false;
 		}
@@ -176,17 +185,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		packets.register(p, id);
 	}
 
-	public ClientStatus getClientStatus() {
-		return clientStatus;
-	}
-
-	public InetSocketAddress getLocalInetSocketAddress() {
-		return localInetSocketAddress;
-	}
-
-	public ClientServer getClientServer() {
-		return clientServer;
-	}
+	public ClientStatus getClientStatus() {return clientStatus;}
+	public InetSocketAddress getLocalInetSocketAddress() {return localInetSocketAddress;}
+	public ClientServer getClientServer() {return clientServer;}
 
 	public int getPort() {
 		return (clientSocketChannel != null && clientSocketChannel.socket() != null
@@ -194,44 +195,15 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 				: -1);
 	}
 
-	public CodecManager getCodec() {
-		return codec;
-	}
-
-	public EncryptionManager getEncryption() {
-		return encryption;
-	}
-
-	public CompressionManager getCompression() {
-		return compression;
-	}
-
-	public PacketManager getPackets() {
-		return packets;
-	}
-
-	public EventQueueConsumer getEventQueueConsumer() {
-		return events;
-	}
-
-	public void setCodec(CodecManager codec) {
-		this.codec = codec;
-	}
-
-	public void setEncryption(EncryptionManager encryption) {
-		this.encryption = encryption;
-	}
-
-	public void setCompression(CompressionManager compression) {
-		this.compression = compression;
-	}
-
-	public void setPackets(PacketManager packets) {
-		this.packets = packets;
-	}
-
-	public void setEventQueueConsumer(EventQueueConsumer events) {
-		this.events = events;
-	}
+	public CodecManager getCodec() {return codec;}
+	public EncryptionManager getEncryption() {return encryption;}
+	public CompressionManager getCompression() {return compression;}
+	public PacketManager getPackets() {return packets;}
+	public EventQueueConsumer getEventQueueConsumer() {return events;}
+	public void setCodec(CodecManager codec) {this.codec = codec;}
+	public void setEncryption(EncryptionManager encryption) {this.encryption = encryption;}
+	public void setCompression(CompressionManager compression) {this.compression = compression;}
+	public void setPackets(PacketManager packets) {this.packets = packets;}
+	public void setEventQueueConsumer(EventQueueConsumer events) {this.events = events;}
 
 }

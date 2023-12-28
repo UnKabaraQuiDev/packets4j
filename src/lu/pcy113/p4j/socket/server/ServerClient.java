@@ -7,12 +7,14 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-import lu.pcy113.jb.utils.ArrayUtils;
+import lu.pcy113.p4j.events.ClientReadPacketEvent;
+import lu.pcy113.p4j.events.ClientWritePacketEvent;
+import lu.pcy113.p4j.events.ClosedChannelEvent;
+import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.client.P4JClientException;
-import lu.pcy113.p4j.socket.events.ClosedChannelEvent;
 
 public class ServerClient implements P4JClientInstance {
 
@@ -53,6 +55,8 @@ public class ServerClient implements P4JClientInstance {
 			// "+ArrayUtils.byteBufferToHexString(content));
 
 			read_handleRawPacket(id, content);
+
+			content.clear();
 		} catch (ClosedByInterruptException e) {
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException e) {
@@ -69,8 +73,14 @@ public class ServerClient implements P4JClientInstance {
 			Object obj = server.getCodec().decode(content);
 
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
+
+			server.events.handle(new ClientReadPacketEvent(this, packet, server.getPackets().getClass(id)));
+
 			packet.serverRead(this, obj);
+		} catch (UnknownPacketException e) {
+			server.events.handle(new ClientReadPacketEvent(this, id, e));
 		} catch (Exception e) {
+			server.events.handle(new ClientReadPacketEvent(this, id, e));
 			handleException("read_handleRawPacket", e);
 		}
 	}
@@ -78,7 +88,8 @@ public class ServerClient implements P4JClientInstance {
 	public boolean write(S2CPacket packet) {
 		try {
 			ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
-			System.err.println("server sent: " + ArrayUtils.byteBufferToHexString(content));
+			// System.err.println("server sent: " +
+			// ArrayUtils.byteBufferToHexString(content));
 			content = server.getEncryption().encrypt(content);
 			content = server.getCompression().compress(content);
 
@@ -92,9 +103,12 @@ public class ServerClient implements P4JClientInstance {
 			// "+ArrayUtils.byteBufferToHexString(bb));
 
 			socketChannel.write(bb);
+
+			server.events.handle(new ClientWritePacketEvent(this, packet));
 			// socketChannel.socket().getOutputStream().flush();
 			return true;
 		} catch (Exception e) {
+			server.events.handle(new ClientWritePacketEvent(this, packet, e));
 			handleException("write", e);
 			return false;
 		}
@@ -107,7 +121,7 @@ public class ServerClient implements P4JClientInstance {
 
 	public void close() {
 		if (serverClientStatus.equals(ServerClientstatus.CLOSED) || serverClientStatus.equals(ServerClientstatus.PRE))
-			throw new P4JClientException("Cannot close not started client socket.");
+			throw new P4JClientException("Cannot close unstarted client socket.");
 
 		try {
 			serverClientStatus = ServerClientstatus.CLOSING;

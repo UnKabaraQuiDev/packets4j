@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
+import lu.pcy113.p4j.events.ClientConnectedEvent;
 
 public class ClientManager {
 
@@ -29,7 +29,7 @@ public class ClientManager {
 	public void register(SocketChannel sc) {
 		ServerClient sclient = clientCreationCallback.apply(sc);
 		registerClient(sclient);
-		server.events.handle(new ClientInstanceConnectedEvent(sclient, server));
+		server.events.handle(new ClientConnectedEvent(sclient, server));
 	}
 
 	public ServerClient get(SocketChannel clientChannel) {

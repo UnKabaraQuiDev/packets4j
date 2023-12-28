@@ -38,10 +38,24 @@ public class PacketManager {
 		}
 	}
 
+	/**
+	 * Returns the id of the packet with the given class<br>
+	 * Outgoing packet
+	 */
 	public int getId(Class<?> p) {
 		if (!outPackets.containsKey(p.getName()))
 			throw new UnknownPacketException("Packet: " + p.getName() + "; not registered in PacketManager.");
 		return outPackets.get(p.getName());
+	}
+
+	/**
+	 * Returns the class of the packet with the given id<br>
+	 * Incoming packet
+	 */
+	public Class<Packet> getClass(int id) {
+		if (!inPackets.containsKey(id))
+			throw new UnknownPacketException("Packet with id: " + id + "; not registered in PacketManager");
+		return inPackets.get(id);
 	}
 
 	public Packet packetInstance(int id) throws UnknownPacketException, PacketInstanceException {

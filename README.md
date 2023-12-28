@@ -10,13 +10,16 @@ A lightweight abstract TCP/IP socket & packet library.
 	- [Data Blocks](#data-blocks)
 	- [Packet Build Order](#packet-build-order)
 - [CodecManager](#codecmanager)
-	
+
 - [EncryptionManager](#encryptionmanager)
 	- [Encryption](#encryption)
 	- [Decryption](#decryption)
 - [CompressionManager](#compressionmanager)
 	- [Compression](#compression)
 	- [Decompression](#decompression)
+
+- [Events](#events)
+
 - [Examples](#examples)
 - [Compiling](#compiling)
 
@@ -140,6 +143,31 @@ The `CompressionManager` class is responsible for managing the compressing and d
 
 ------
 
+## Events
+There are 3 default EventQueueConsumer:
+- `AsyncEcventQueueConsumer` handles events asyncronously, in a separate thread.
+- `SyncQueueConsumer` handles in the same thread it was called in.
+- `EventQueueConsumer.IGNORE` ignores all event, default consumer.
+
+**Registering an EventQueueConsumer**:
+`P4JServer.setEventQueueConsumer(<consumer>)`
+`P4JCient.setEventQueueConsumer(<consumer>)`
+**Adding a Listener**:
+`P4JServer.events.addListener(<listener>)`
+`P4JClient.events.addListener(<listener>)`
+
+
+There are multiple events:
+- ClientConnectedEvent(P4JClientInstance, P4JServerInstance): When a client connects to a server.<br>
+Server side: ServerClient -> P4JServer
+Client side: P4JClient -> ClientServer
+- ClientReadPacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean): When a client reads an incoming packet.
+- ClientWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean): When a client writes an outgoing packet.
+- ClosedChannelEvent(ClosedChannelException, P4JClientInstance): When a client gets closed.
+
+
+------
+
 ## Examples
 See [Cat Dog Question Example](/examples/catdog/CatDogExample.md)
 
@@ -147,7 +175,7 @@ See [Cat Dog Question Example](/examples/catdog/CatDogExample.md)
 
 ## Compiling
 To compile use `build/build.sh`; the arguments:<br>
-(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) is not provided.<br>
+(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) if not provided.<br>
 (Optional) -main:{class}: Provide a class name as main class for the jar file.<br>
 (Optional) -cp:{classpath}: Provide a classpath for compiling, separated by semicolons `;`<br>
 (Optional) -regex:{regex}: File selector for files passed to the compiler, default is `*.java`<br>

@@ -11,12 +11,14 @@ import lu.pcy113.jb.codec.encoder.ArrayEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.AsyncEventQueueConsumer;
+import lu.pcy113.p4j.events.ClientConnectedEvent;
+import lu.pcy113.p4j.events.ClientReadPacketEvent;
+import lu.pcy113.p4j.events.ClientWritePacketEvent;
 import lu.pcy113.p4j.events.Event;
 import lu.pcy113.p4j.events.Listener;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.client.P4JClient;
-import lu.pcy113.p4j.socket.events.ClientInstanceConnectedEvent;
 import lu.pcy113.p4j.socket.server.P4JServer;
 import lu.pcy113.p4j.socket.server.ServerClient;
 
@@ -41,9 +43,23 @@ public class CatDogExample {
 			@Override
 			public void handle(Event event) { // conntected
 				System.out.println("Server event: " + event.getClass().getSimpleName());
-				if (event instanceof ClientInstanceConnectedEvent)
-					sendChoiceRequest((ServerClient) ((ClientInstanceConnectedEvent) event).getClient()); // See "Send
-																											// Packets"
+				if (event instanceof ClientConnectedEvent) {
+					System.out.println("ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+					sendChoiceRequest((ServerClient) ((ClientConnectedEvent) event).getClient()); // See "Send Packets"
+				}
+				
+				if (event instanceof ClientWritePacketEvent)
+					if(((ClientWritePacketEvent) event).hasFailed())
+						System.out.println("ServerClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+					else
+						System.out.println("ServerClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+				
+				if (event instanceof ClientReadPacketEvent)
+					if(((ClientReadPacketEvent) event).hasFailed())
+						System.out.println("ServerClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+					else
+						System.out.println("ServerClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+					
 			}
 		});
 
@@ -69,7 +85,29 @@ public class CatDogExample {
 		EncryptionManager clientEncryption = EncryptionManager.raw();
 		CompressionManager clientCompression = CompressionManager.raw();
 		client = new P4JClient(clientCodec, clientEncryption, clientCompression);
-
+		client.setEventQueueConsumer(new AsyncEventQueueConsumer());
+		
+		client.events.addListener(new Listener() {
+			@Override
+			public void handle(Event event) { // conntected
+				System.out.println("Server event: " + event.getClass().getSimpleName());
+				if (event instanceof ClientConnectedEvent)
+					System.out.println("ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+				
+				if (event instanceof ClientWritePacketEvent)
+					if(((ClientWritePacketEvent) event).hasFailed())
+						System.out.println("ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+					else
+						System.out.println("ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+				
+				if (event instanceof ClientReadPacketEvent)
+					if(((ClientReadPacketEvent) event).hasFailed())
+						System.out.println("ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+					else
+						System.out.println("ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+			}
+		});
+		
 		// Same as the Server
 		client.getPackets().register(C2S_CatDogPacket.class, 1);
 		client.registerPacket(S2C_CatDogPacket.class, 2);
