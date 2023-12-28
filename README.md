@@ -149,12 +149,12 @@ There are 3 default EventQueueConsumer:
 - `SyncQueueConsumer` handles in the same thread it was called in.
 - `EventQueueConsumer.IGNORE` ignores all event, default consumer.
 
-**Registering an EventQueueConsumer**:
-`P4JServer.setEventQueueConsumer(<consumer>)`
-`P4JCient.setEventQueueConsumer(<consumer>)`
-**Adding a Listener**:
-`P4JServer.events.addListener(<listener>)`
-`P4JClient.events.addListener(<listener>)`
+**Registering an EventQueueConsumer**:<br>
+`P4JServer.setEventQueueConsumer(<consumer>)`<br>
+`P4JCient.setEventQueueConsumer(<consumer>)`<br>
+**Adding a Listener**:<br>
+`P4JServer.events.addListener(<listener>)`<br>
+`P4JClient.events.addListener(<listener>)`<br>
 
 
 There are multiple events:
