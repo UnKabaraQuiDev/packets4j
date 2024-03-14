@@ -35,7 +35,14 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
-
+	
+	/**
+	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
+	 * 
+	 * @param CodecManager the server codec manager 
+	 * @param EntryptionManager the server encryption manager
+	 * @param CompressionManager the server compression manager
+	 */
 	public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com) {
 		this.codec = cm;
 		this.encryption = em;
@@ -43,14 +50,25 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		this.clientManager = new ClientManager(this);
 	}
 
-	public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com, ClientManager clientManager) {
+	/*public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com, ClientManager clientManager) {
 		this.codec = cm;
 		this.encryption = em;
 		this.compression = com;
 		this.clientManager = clientManager;
-	}
-
+	}*/
+	
+	/**
+	 * Binds the current server to the local address.
+	 * 
+	 * @param InetSocketAddress the local address to bind to
+	 * @throws IOException if the {@link ServerSocketChannel} or {@link Selector} cannot be opened or bound
+	 * @throws P4JServerException if the server is already bound
+	 */
 	public void bind(InetSocketAddress isa) throws IOException {
+		if(!serverStatus.equals(ServerStatus.PRE)) {
+			throw new P4JServerException("Server already bound");
+		}
+		
 		serverSocketSelector = Selector.open();
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.socket().bind(isa);
@@ -104,22 +122,35 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		}
 	}
 
+	/**
+	 * Handles the given exception in this server instance.<br>
+	 * It is strongly encouraged to override this method.
+	 * 
+	 * @param String the message (the context) ("run", "close")
+	 * @param Exception the exception
+	 */
 	protected void handleException(String msg, Exception e) {
 		System.err.println(getClass().getName() + "/" + localInetSocketAddress + "> " + msg + " ::");
 		e.printStackTrace(System.err);
 	}
 
+	/**
+	 * Sends the packet to all the connected clients.
+	 * 
+	 * @param S2CPacket the packet to send
+	 */
 	public void broadcast(S2CPacket packet) {
-		for (ServerClient sc : clientManager.allClients()) {
+		for (ServerClient sc : clientManager.getAllClients()) {
 			sc.write(packet);
 		}
 	}
-	/*
-	 * public void kickClients(String msg, boolean force) { for(ServerClient sc :
-	 * clients.values()) { sc.write(new DisconnectPacket(msg)); if(force)
-	 * sc.close(); } }
-	 */
 
+	/**
+	 * Sets the server socket in client accept mode.<br>
+	 * The server will accept all future incoming client connections.
+	 * 
+	 * @throws P4JServerException if the server socket is closed
+	 */
 	public void setAccepting() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client accept mode.");
@@ -130,6 +161,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		}
 	}
 
+	/**
+	 * Closes the server socket.<br>
+	 * The server will no longer accept new client connections, all clients will be forcefully disconnected and the local port is released.
+	 * 
+	 * @throws P4JServerException if the server socket is already closed
+	 */
 	public void close() {
 		if (serverStatus.equals(ServerStatus.CLOSED) || serverStatus.equals(ServerStatus.PRE))
 			throw new P4JServerException("Cannot close not started server socket.");
@@ -142,9 +179,16 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		}
 	}
 
+	/**
+	 * Sets the server socket in client refuse mode.<br>
+	 * The server will refuse all future incoming client connections but keep current connections alive.
+	 * 
+	 * @throws P4JServerException if the server socket is closed.
+	 */
 	public void setRefusing() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client refuse mode.");
+		this.serverStatus = ServerStatus.REFUSING;
 	}
 
 	public void registerPacket(Class<?> p, int id) {
@@ -160,9 +204,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	}
 
 	public Collection<ServerClient> getConnectedClients() {
-		return clientManager.allClients();
+		return clientManager.getAllClients();
 	}
 
+	/**
+	 * @return the local port bound to the server or -1 if the server is closed
+	 */
 	public int getPort() {
 		return (serverSocketChannel != null && serverSocketChannel.socket() != null ? serverSocketChannel.socket().getLocalPort() : -1);
 	}

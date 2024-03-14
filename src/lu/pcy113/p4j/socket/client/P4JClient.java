@@ -29,7 +29,13 @@ import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.p4j.socket.server.P4JServerException;
 
+/**
+ * This class represents the client-side Client connecting to the server.
+ * 
+ * @author pcy113
+ */
 public class P4JClient extends Thread implements P4JInstance, P4JClientInstance {
 
 	private ClientStatus clientStatus = ClientStatus.PRE;
@@ -48,30 +54,56 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	private ClientServer clientServer;
 
+	/**
+	 * 
+	 * @param CodecManager the client codec manager
+	 * @param EntryptionManager the client encryption manager
+	 * @param CompressionManager the client compression manager
+	 */
 	public P4JClient(CodecManager cm, EncryptionManager em, CompressionManager com) {
 		this.codec = cm;
 		this.encryption = em;
 		this.compression = com;
 	}
 
+	/**
+	 * Bind to a random available port on the local machine.
+	 * 
+	 * @throws IOException
+	 */
 	public void bind() throws IOException {
 		bind(0);
 	}
 
+	/**
+	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
+	 * 
+	 * @param port the port to bind to
+	 * @throws IOException if the {@link Socket} cannot be created or bound
+	 */
 	public void bind(int port) throws IOException {
 		clientSocket = SocketFactory.getDefault().createSocket();
 		clientSocket.bind(new InetSocketAddress(port));
-		clientStatus = ClientStatus.OPEN;
+		clientStatus = ClientStatus.BOUND;
 
 		this.localInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getLocalPort());
 		super.setName("P4JClient@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
 	}
 
+	/**
+	 * Connect to the specified address and port on the remote machine.
+	 * 
+	 * @param InetAddress the remote address
+	 * @param int the remote port
+	 * @throws IOException if the {@link Socket} cannot be connected
+	 */
 	public void connect(InetAddress remote, int port) throws IOException {
-		// clientSocket.configureBlocking(true);
+		if(!clientStatus.equals(ClientStatus.BOUND)) {
+			throw new P4JClientException("Client not bound");
+		}
+		
 		clientSocket.connect(new InetSocketAddress(remote, port));
 		clientSocket.setSoTimeout(200); // ms
-		// clientSocketChannel.socket().setTcpNoDelay(true);
 		this.inputStream = clientSocket.getInputStream();
 		this.outputStream = clientSocket.getOutputStream();
 
@@ -86,6 +118,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		events.handle(new ClientConnectedEvent(this, clientServer));
 	}
 
+	/**
+	 * Connect to the specified address and port on the remote machine.
+	 * 
+	 * @see {@link #connect(InetAddress, int)}
+	 */
 	public void connect(InetSocketAddress isa) throws IOException {
 		this.connect(isa.getAddress(), isa.getPort());
 	}
@@ -187,14 +224,19 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		}
 	}
 
+	/**
+	 * Closes the client socket.<br>
+	 * The client' socket will be closed and the port will be released.
+	 * 
+	 * @throws P4JClientException if the client isn't started
+	 */
 	public void close() {
 		if (!clientStatus.equals(ClientStatus.LISTENING))
 			throw new P4JClientException("Cannot close not started client socket.");
 
 		try {
 			clientStatus = ClientStatus.CLOSING;
-			// this.interrupt(); // No need to interrupt because will stop reading after
-			// soTimeout
+			// this.interrupt(); // No need to interrupt because will stop reading after soTimeout
 			clientSocket.close();
 			clientStatus = ClientStatus.CLOSED;
 
@@ -207,6 +249,13 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		}
 	}
 
+	/**
+	 * Handles the given exception in this server instance.<br>
+	 * It is strongly encouraged to override this method.
+	 * 
+	 * @param String the message (the context) ("read", "read_handleRawPacket", "write", "close")
+	 * @param Exception the exception
+	 */
 	protected void handleException(String msg, Exception e) {
 		System.err.println(getClass().getName() + "/" + localInetSocketAddress + "> " + msg + " ::");
 		e.printStackTrace(System.err);
@@ -229,6 +278,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		return clientServer;
 	}
 
+	/**
+	 * @return the current port the client is connected to or -1 if it isn't bound
+	 */
 	public int getPort() {
 		return (clientSocket != null ? clientSocket.getLocalPort() : -1);
 	}
