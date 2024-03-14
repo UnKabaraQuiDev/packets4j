@@ -44,21 +44,21 @@ public class CatDogExample {
 			public void handle(Event event) { // conntected
 				System.out.println("Server event: " + event.getClass().getSimpleName());
 				if (event instanceof ClientConnectedEvent) {
-					System.out.println("ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+					System.out.println("Server ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
 					sendChoiceRequest((ServerClient) ((ClientConnectedEvent) event).getClient()); // See "Send Packets"
 				}
 				
 				if (event instanceof ClientWritePacketEvent)
 					if(((ClientWritePacketEvent) event).hasFailed())
-						System.out.println("ServerClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+						System.out.println("Server ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
 					else
-						System.out.println("ServerClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+						System.out.println("Server ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
 				
 				if (event instanceof ClientReadPacketEvent)
 					if(((ClientReadPacketEvent) event).hasFailed())
-						System.out.println("ServerClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+						System.out.println("Server ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
 					else
-						System.out.println("ServerClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+						System.out.println("Server ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
 					
 			}
 		});
@@ -90,21 +90,21 @@ public class CatDogExample {
 		client.events.addListener(new Listener() {
 			@Override
 			public void handle(Event event) { // conntected
-				System.out.println("Server event: " + event.getClass().getSimpleName());
+				System.out.println("Client event: " + event.getClass().getSimpleName());
 				if (event instanceof ClientConnectedEvent)
-					System.out.println("ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+					System.out.println("Client ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
 				
 				if (event instanceof ClientWritePacketEvent)
 					if(((ClientWritePacketEvent) event).hasFailed())
-						System.out.println("ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+						System.out.println("Client WritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
 					else
-						System.out.println("ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+						System.out.println("Client WritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
 				
 				if (event instanceof ClientReadPacketEvent)
 					if(((ClientReadPacketEvent) event).hasFailed())
-						System.out.println("ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+						System.out.println("Client ReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
 					else
-						System.out.println("ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+						System.out.println("Client ReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
 			}
 		});
 		
@@ -126,10 +126,15 @@ public class CatDogExample {
 		// as soon as the client connects
 		// See "Create a Server"
 
-		Thread.sleep(1000);
+		Thread.sleep(2000);
 
 		client.close();
+		client.join();
 		server.close();
+		server.join();
+		
+		System.out.println("Client: "+client.isAlive()+", "+client.getState()+" and "+client.getClientStatus());
+		System.out.println("Server: "+server.isAlive()+", "+server.getState()+" and "+server.getServerStatus());
 	}
 
 	// See "Create a Server"

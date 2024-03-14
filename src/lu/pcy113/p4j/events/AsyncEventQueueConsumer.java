@@ -12,7 +12,7 @@ public class AsyncEventQueueConsumer extends Thread implements EventQueueConsume
 	private List<Listener> listeners = new ArrayList<Listener>();
 
 	public AsyncEventQueueConsumer() {
-		this(false);
+		this(true);
 	}
 
 	public AsyncEventQueueConsumer(boolean daemon) {

@@ -58,8 +58,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		serverSocketChannel.register(serverSocketSelector, SelectionKey.OP_ACCEPT);
 		serverStatus = ServerStatus.BOUND;
 
-		this.localInetSocketAddress = new InetSocketAddress(serverSocketChannel.socket().getInetAddress(),
-				serverSocketChannel.socket().getLocalPort());
+		this.localInetSocketAddress = new InetSocketAddress(serverSocketChannel.socket().getInetAddress(), serverSocketChannel.socket().getLocalPort());
 		super.setName("P4JServer@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
 
 		// super.start();
@@ -91,10 +90,10 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 						SocketChannel clientChannel = (SocketChannel) key.channel();
 						clientManager.get(clientChannel).read();
 
-						if (key.isWritable()) {
-							clientChannel.socket().getOutputStream().flush();
-							System.out.println("server#read: flushed");
-						}
+					} else if (key.isWritable()) {
+						SocketChannel clientChannel = (SocketChannel) key.channel();
+						clientChannel.socket().getOutputStream().flush();
+						//System.out.println("server#read: flushed");
 					}
 
 					keyIterator.remove();
@@ -126,8 +125,9 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 			throw new P4JServerException("Cannot set closed server socket in client accept mode.");
 		serverStatus = ServerStatus.ACCEPTING;
 
-		if (!super.isAlive())
+		if (!super.isAlive()) {
 			super.start();
+		}
 	}
 
 	public void close() {
@@ -164,9 +164,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	}
 
 	public int getPort() {
-		return (serverSocketChannel != null && serverSocketChannel.socket() != null
-				? serverSocketChannel.socket().getLocalPort()
-				: -1);
+		return (serverSocketChannel != null && serverSocketChannel.socket() != null ? serverSocketChannel.socket().getLocalPort() : -1);
 	}
 
 	public CodecManager getCodec() {

@@ -9,7 +9,7 @@ import java.util.UUID;
 
 import lu.pcy113.p4j.events.ClientReadPacketEvent;
 import lu.pcy113.p4j.events.ClientWritePacketEvent;
-import lu.pcy113.p4j.events.ClosedChannelEvent;
+import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -85,7 +85,7 @@ public class ServerClient implements P4JClientInstance {
 		}
 	}
 
-	public boolean write(S2CPacket packet) {
+	public synchronized boolean write(S2CPacket packet) {
 		try {
 			ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 			// System.err.println("server sent: " +
@@ -102,7 +102,8 @@ public class ServerClient implements P4JClientInstance {
 			// System.out.println("serverclient#write:
 			// "+ArrayUtils.byteBufferToHexString(bb));
 
-			socketChannel.write(bb);
+			int length = socketChannel.write(bb);
+			// socketChannel.socket().getOutputStream().flush();
 
 			server.events.handle(new ClientWritePacketEvent(this, packet));
 			// socketChannel.socket().getOutputStream().flush();
@@ -128,7 +129,7 @@ public class ServerClient implements P4JClientInstance {
 			socketChannel.close();
 			serverClientStatus = ServerClientstatus.CLOSED;
 
-			server.events.handle(new ClosedChannelEvent(null, this));
+			server.events.handle(new ClosedSocketEvent(null, this));
 		} catch (IOException e) {
 			handleException("close", e);
 		}
