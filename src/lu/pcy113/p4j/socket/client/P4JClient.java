@@ -3,6 +3,7 @@ package lu.pcy113.p4j.socket.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.Socket;
@@ -29,7 +30,6 @@ import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.socket.server.P4JServerException;
 
 /**
  * This class represents the client-side Client connecting to the server.
@@ -76,14 +76,26 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	}
 
 	/**
-	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
+	 * Bind to the specified port on the local machine. If the port is 0, a random
+	 * available port is chosen.
 	 * 
-	 * @param port the port to bind to
+	 * @param int the port to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
 	public void bind(int port) throws IOException {
+		bind(new InetSocketAddress(port));
+	}
+
+	/**
+	 * Bind to the specified port on the local machine. If the port is 0, a random
+	 * available port is chosen.
+	 * 
+	 * @param InetSocketAddress the local address to bind to
+	 * @throws IOException if the {@link Socket} cannot be created or bound
+	 */
+	public void bind(InetSocketAddress isa) throws IOException {
 		clientSocket = SocketFactory.getDefault().createSocket();
-		clientSocket.bind(new InetSocketAddress(port));
+		clientSocket.bind(isa);
 		clientStatus = ClientStatus.BOUND;
 
 		this.localInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getLocalPort());
@@ -98,24 +110,40 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * @throws IOException if the {@link Socket} cannot be connected
 	 */
 	public void connect(InetAddress remote, int port) throws IOException {
-		if(!clientStatus.equals(ClientStatus.BOUND)) {
+		if (!clientStatus.equals(ClientStatus.BOUND)) {
 			throw new P4JClientException("Client not bound");
 		}
-		
-		clientSocket.connect(new InetSocketAddress(remote, port));
-		clientSocket.setSoTimeout(200); // ms
-		this.inputStream = clientSocket.getInputStream();
-		this.outputStream = clientSocket.getOutputStream();
+		try {
+			clientSocket.connect(new InetSocketAddress(remote, port), 5_000);
+			clientSocket.setSoTimeout(200); // ms
+			this.inputStream = clientSocket.getInputStream();
+			this.outputStream = clientSocket.getOutputStream();
 
-		clientStatus = ClientStatus.LISTENING;
+			clientStatus = ClientStatus.LISTENING;
 
-		clientServer = new ClientServer(new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getPort()));
+			clientServer = new ClientServer(new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getPort()));
 
-		if (!super.isAlive()) {
-			super.start();
+			if (!super.isAlive()) {
+				super.start();
+			}
+
+			events.handle(new ClientConnectedEvent(this, clientServer));
+		} catch (SocketTimeoutException e) {
+			close();
+			throw new P4JClientException("Connection timed out", e);
+		} catch (ConnectException e) {
+			close();
+			throw new P4JClientException("Connection refused", e);
+		} catch (SocketException e) {
+			close();
+			throw new P4JClientException(e);
+		} catch (IOException e) {
+			close();
+			throw new P4JClientException(e);
+		} catch(IllegalStateException e) {
+			close();
+			throw new P4JClientException(e);
 		}
-
-		events.handle(new ClientConnectedEvent(this, clientServer));
 	}
 
 	/**
@@ -138,7 +166,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	public void read() {
 		try {
 			byte[] bb = new byte[4];
-			if ( inputStream.read(bb) != 4) {
+			if (inputStream.read(bb) != 4) {
 				return;
 			}
 
@@ -211,7 +239,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			} else {
 				outputStream.write(ArrayUtils.byteBufferToArray(bb));
 			}
-			
+
 			outputStream.flush();
 
 			events.handle(new ClientWritePacketEvent(this, packet));
@@ -231,13 +259,19 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * @throws P4JClientException if the client isn't started
 	 */
 	public void close() {
-		if (!clientStatus.equals(ClientStatus.LISTENING))
-			throw new P4JClientException("Cannot close not started client socket.");
+		if (!clientStatus.equals(ClientStatus.LISTENING)) {
+			clientStatus = ClientStatus.CLOSED;
+			return;
+			//throw new P4JClientException("Cannot close not started client socket.");
+		}
 
 		try {
 			clientStatus = ClientStatus.CLOSING;
-			// this.interrupt(); // No need to interrupt because will stop reading after soTimeout
-			clientSocket.close();
+			// this.interrupt(); // No need to interrupt because will stop reading after
+			// soTimeout
+			if(clientSocket != null) {
+				clientSocket.close();
+			}
 			clientStatus = ClientStatus.CLOSED;
 
 			clientSocket = null;
@@ -253,7 +287,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * Handles the given exception in this server instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String the message (the context) ("read", "read_handleRawPacket", "write", "close")
+	 * @param String the message (the context) ("read", "read_handleRawPacket",
+	 * "write", "close")
 	 * @param Exception the exception
 	 */
 	protected void handleException(String msg, Exception e) {
