@@ -1,7 +1,5 @@
 package lu.pcy113.p4j.socket.client;
 
-import java.net.SocketTimeoutException;
-
 public class P4JClientException extends RuntimeException {
 
 	public P4JClientException(String msg) {

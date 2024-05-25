@@ -5,9 +5,9 @@ import java.net.InetSocketAddress;
 import java.util.Arrays;
 import java.util.Random;
 
-import lu.pcy113.jb.codec.CodecManager;
-import lu.pcy113.jb.codec.decoder.ArrayDecoder;
-import lu.pcy113.jb.codec.encoder.ArrayEncoder;
+import lu.pcy113.jbcodec.CodecManager;
+import lu.pcy113.jbcodec.decoder.ArrayDecoder;
+import lu.pcy113.jbcodec.encoder.ArrayEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.AsyncEventQueueConsumer;

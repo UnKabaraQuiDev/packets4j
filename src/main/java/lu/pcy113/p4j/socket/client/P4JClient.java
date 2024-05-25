@@ -16,8 +16,7 @@ import java.nio.channels.NotYetConnectedException;
 
 import javax.net.SocketFactory;
 
-import lu.pcy113.jb.codec.CodecManager;
-import lu.pcy113.jb.utils.ArrayUtils;
+import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.ClientConnectedEvent;
@@ -30,6 +29,7 @@ import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.pclib.PCUtils;
 
 /**
  * This class represents the client-side Client connecting to the server.
@@ -105,8 +105,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	/**
 	 * Connect to the specified address and port on the remote machine.
 	 * 
-	 * @param InetAddress the remote address
-	 * @param int the remote port
+	 * @param remote the remote address
+	 * @param port the remote port
 	 * @throws IOException if the {@link Socket} cannot be connected
 	 */
 	public void connect(InetAddress remote, int port) throws IOException {
@@ -170,7 +170,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 				return;
 			}
 
-			int length = ArrayUtils.byteToInt(bb);
+			int length = PCUtils.byteToInt(bb);
 
 			byte[] cc = new byte[length];
 			if (inputStream.read(cc) != length) {
@@ -222,7 +222,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			Object obj = packet.clientWrite(this);
 			ByteBuffer content = codec.encode(obj);
 			// System.err.println("client sent: " +
-			// ArrayUtils.byteBufferToHexString(content));
+			// PCUtils.byteBufferToHexString(content));
 			content = encryption.encrypt(content);
 			content = compression.compress(content);
 
@@ -232,12 +232,12 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			bb.put(content);
 			bb.flip();
 
-			// System.out.println("client#write: "+ArrayUtils.byteBufferToHexString(bb));
+			// System.out.println("client#write: "+PCUtils.byteBufferToHexString(bb));
 
 			if (bb.hasArray()) {
 				outputStream.write(bb.array());
 			} else {
-				outputStream.write(ArrayUtils.byteBufferToArray(bb));
+				outputStream.write(PCUtils.byteBufferToArray(bb));
 			}
 
 			outputStream.flush();
