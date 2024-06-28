@@ -70,29 +70,7 @@ server = new P4JServer(serverCodec, serverEncryption, serverCompression);
 server.setEventQueueConsumer(new AsyncEventQueueConsumer());
 
 // Attach a listener to handle new connected clients
-server.events.addListener(new EventListener() {
-	@Override
-	public void handle(Event event) { // conntected
-		GlobalLogger.info("Server event: " + event.getClass().getSimpleName());
-		if (event instanceof ClientConnectedEvent) {
-			GlobalLogger.info("Server ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
-			sendChoiceRequest((ServerClient) ((ClientConnectedEvent) event).getClient()); // See "Send Packets"
-		}
-		
-		if (event instanceof ClientWritePacketEvent)
-			if(((ClientWritePacketEvent) event).hasFailed())
-				GlobalLogger.info("Server ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
-			else
-				GlobalLogger.info("Server ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
-		
-		if (event instanceof ClientReadPacketEvent)
-			if(((ClientReadPacketEvent) event).hasFailed())
-				GlobalLogger.info("Server ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
-			else
-				GlobalLogger.info("Server ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
-			
-	}
-});
+server.getEventManager().register(new ServerEventListener());
 
 // Register incoming and outdoing packets
 // We can't use the same id, because the classes haven't the same argument
@@ -120,26 +98,7 @@ CompressionManager clientCompression = CompressionManager.raw();
 client = new P4JClient(clientCodec, clientEncryption, clientCompression);
 client.setEventQueueConsumer(new AsyncEventQueueConsumer());
 
-client.events.addListener(new EventListener() {
-	@Override
-	public void handle(Event event) { // conntected
-		GlobalLogger.info("Server event: " + event.getClass().getSimpleName());
-		if (event instanceof ClientConnectedEvent)
-			GlobalLogger.info("Client ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
-		
-		if (event instanceof ClientWritePacketEvent)
-			if(((ClientWritePacketEvent) event).hasFailed())
-				GlobalLogger.info("Client WritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
-			else
-				GlobalLogger.info("Client WritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
-		
-		if (event instanceof ClientReadPacketEvent)
-			if(((ClientReadPacketEvent) event).hasFailed())
-				GlobalLogger.info("Client ReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
-			else
-				GlobalLogger.info("Client ReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
-	}
-});
+client.getEventManager().register(new ClientEventListener());
 
 // Same as the Server
 client.getPackets().register(C2S_CatDogPacket.class, 1);
@@ -148,6 +107,65 @@ client.registerPacket(S2C_CatDogPacket.class, 2);
 // Bind without any argument takes a free port, a specific port can be passed as argument
 client.bind();
 GlobalLogger.info("Client bound to port: " + client.getPort());
+```
+
+Create EventListeners:
+```java
+public class ServerEventListener implements EventListener {
+	
+	@EventHandler
+	public void onClientConnect(ClientConnectedEvent event) {
+		GlobalLogger.info("Server ClientConnectedEvent: " + ((ClientConnectedEvent) event).getClient());
+		CatDogExample.sendChoiceRequest((ServerClient) ((ClientConnectedEvent) event).getClient()); // See "Send Packets"
+	}
+
+	@EventHandler
+	public void onClientWrite(S2CWritePacketEvent event) {
+		if (((S2CWritePacketEvent) event).hasFailed()) {
+			GlobalLogger.info("Server ClientWritePacketEvent failed: " + ((S2CWritePacketEvent) event).getException());
+		} else {
+			GlobalLogger.info("Server ClientWritePacketEvent: " + ((S2CWritePacketEvent) event).getPacket());
+		}
+	}
+
+	@EventHandler
+	public void onClientRead(S2CReadPacketEvent event) {
+		if (((S2CReadPacketEvent) event).hasFailed()) {
+			GlobalLogger.info("Server ClientReadPacketEvent failed: " + ((S2CReadPacketEvent) event).getException());
+		} else {
+			GlobalLogger.info("Server ClientReadPacketEvent: " + ((S2CReadPacketEvent) event).getPacket());
+		}
+	}
+	
+}
+```
+```java
+public class ClientEventListener implements EventListener {
+	
+	@EventHandler
+	public void onClientConnect(ClientConnectedEvent event) {
+		GlobalLogger.info("Client ClientConnectedEvent: " + ((ClientConnectedEvent) event).getClient());
+	}
+
+	@EventHandler
+	public void onClientWrite(S2CWritePacketEvent event) {
+		if (((S2CWritePacketEvent) event).hasFailed()) {
+			GlobalLogger.info("Client WritePacketEvent failed: " + ((S2CWritePacketEvent) event).getException());
+		} else {
+			GlobalLogger.info("Client WritePacketEvent: " + ((S2CWritePacketEvent) event).getPacket());
+		}
+	}
+
+	@EventHandler
+	public void onClientRead(S2CReadPacketEvent event) {
+		if (((S2CReadPacketEvent) event).hasFailed()) {
+			GlobalLogger.info("Client ReadPacketEvent failed: " + ((S2CReadPacketEvent) event).getException());
+		} else {
+			GlobalLogger.info("Client ReadPacketEvent: " + ((S2CReadPacketEvent) event).getPacket());
+		}
+	}
+	
+}
 ```
 
 Connect the Client:
@@ -159,13 +177,12 @@ GlobalLogger.info("Client connected");
 
 Send Packets:
 ```java
-// See "Create a Server"
 // This function gets called when a new client connects
-private static void sendChoiceRequest(ServerClient client) {
+public static void sendChoiceRequest(ServerClient client) {
 	GlobalLogger.info("Client connected to server");
 
 	// Send a packet to the newly connected client
-	GlobalLogger.info("Packet sent to client: " + client.write(new  S2C_CatDogPacket()));
+	GlobalLogger.info("Packet sent to client: " + client.write(new S2C_CatDogPacket()));
 
 	// OR
 
@@ -184,23 +201,35 @@ In this example, the server-client packet exchange should look like this:
 
 And the System.out output (for a single client):
 ```
-(Server): Server bound						     // <- bind
-(Server): Server listening and accepting clients // <- setAccepting
+// server
+(INFO)[main] Server bound to port: 8090             // <- bind
+(INFO)[main] Server listening and accepting clients // <- setAccepting
 
-(Client): Client bound			     // <- bind
-(Client): Client connected		     // <- connect
-(Server): Client connected to server // -> sendChoiceRequest
+// client
+(INFO)[main] Client bound to port: 47249                                         // <- bind
+(INFO)[main] Client ClientConnectedEvent: Thread[P4JClient@0.0.0.0:47249,5,main] // <- connect
+(INFO)[main] Client connected
 
-// S2C
-(Server): Asked to client	 // <- serverWrite
-(Server): true			     // the packet was sent successfully
-(Client): Question received: // <- clientRead
-(Client): [Dog, or, Cat]	 // <- clientRead
+// server
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Server ClientConnectedEvent: lu.pcy113.p4j.socket.server.ServerClient@c821a32
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Client connected to server // -> sendChoiceRequest
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Asked to client            // <- serverWrite
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Server ClientWritePacketEvent: catdog.S2C_CatDogPacket@2fece981
 
-// C2S
-(Client): Choice prepared: Dog	    // <- C2S_CatDogPacket constructor
-(Client): Responding to server: Dog // <- clientWrite
-(Server): Client answered: Dog	    // <- serverRead
+// client
+(INFO)[P4JClient@0.0.0.0:47249] Client ReadPacketEvent: catdog.S2C_CatDogPacket@5a2400f4
+
+// server
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Packet sent to client: true // the packet was sent successfully
+(INFO)[P4JClient@0.0.0.0:47249] Question received:                 // <- clientRead
+(INFO)[P4JClient@0.0.0.0:47249] [Dog, or, Cat]                     // <- clientRead
+(INFO)[P4JClient@0.0.0.0:47249] Choice prepared: or	               // <- C2S_CatDogPacket constructor
+(INFO)[P4JClient@0.0.0.0:47249] Responding to server: or           // <- clientWrite
+(INFO)[P4JServer@0:0:0:0:0:0:0:0:8090] Client answered: or	       // <- serverRead
+
+// closing the server & client
+(INFO)[main] Client: false, TERMINATED and CLOSED
+(INFO)[main] Server: false, TERMINATED and CLOSED
 ```	
 
 Closing the Server & Client:

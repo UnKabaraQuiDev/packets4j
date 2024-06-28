@@ -1,5 +1,6 @@
 package catdog;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -20,8 +21,8 @@ public class CatDogExample {
 
 	public static void main(String[] args) throws IOException, InterruptedException {
 
-		GlobalLogger.init(null);
-		
+		GlobalLogger.init(new File("src/main/examples/test_logs.properties"));
+
 		// CREATE A SERVER
 
 		CodecManager serverCodec = CodecManager.base();
@@ -56,6 +57,7 @@ public class CatDogExample {
 		CompressionManager clientCompression = CompressionManager.raw();
 		client = new P4JClient(clientCodec, clientEncryption, clientCompression);
 
+		// same as the server
 		client.getEventManager().register(new ClientEventListener());
 
 		// Same as the Server

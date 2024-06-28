@@ -10,7 +10,7 @@
 	<packaging>jar</packaging>
 
 	<name>Packets4J</name>
-	<description> A lightweight abstract TCP/IP socket &amp; packet library.</description>
+	<description>A lightweight abstract TCP/IP socket &amp; packet library.</description>
 
 	<properties>
 		<maven.compiler.source>1.8</maven.compiler.source>
@@ -48,6 +48,7 @@
 				<configuration>
 					<source>${maven.compiler.source}</source>
 					<target>${maven.compiler.target}</target>
+					<encoding>UTF-8</encoding>
 				</configuration>
 			</plugin>
 
