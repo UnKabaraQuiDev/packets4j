@@ -19,17 +19,19 @@ import javax.net.SocketFactory;
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
+import lu.pcy113.p4j.events.C2SWritePacketEvent;
 import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.ClientReadPacketEvent;
-import lu.pcy113.p4j.events.ClientWritePacketEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
-import lu.pcy113.p4j.events.EventQueueConsumer;
+import lu.pcy113.p4j.events.P4JEvent;
+import lu.pcy113.p4j.events.S2CReadPacketEvent;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.pclib.PCUtils;
+import lu.pcy113.pclib.listener.EventManager;
+import lu.pcy113.pclib.listener.SyncEventManager;
 
 /**
  * This class represents the client-side Client connecting to the server.
@@ -40,7 +42,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	private ClientStatus clientStatus = ClientStatus.PRE;
 
-	public EventQueueConsumer events = EventQueueConsumer.IGNORE;
+	private EventManager eventManager = new SyncEventManager();
 
 	private CodecManager codec;
 	private EncryptionManager encryption;
@@ -56,8 +58,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	/**
 	 * 
-	 * @param CodecManager the client codec manager
-	 * @param EntryptionManager the client encryption manager
+	 * @param CodecManager       the client codec manager
+	 * @param EntryptionManager  the client encryption manager
 	 * @param CompressionManager the client compression manager
 	 */
 	public P4JClient(CodecManager cm, EncryptionManager em, CompressionManager com) {
@@ -76,8 +78,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	}
 
 	/**
-	 * Bind to the specified port on the local machine. If the port is 0, a random
-	 * available port is chosen.
+	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
 	 * 
 	 * @param int the port to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
@@ -87,8 +88,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	}
 
 	/**
-	 * Bind to the specified port on the local machine. If the port is 0, a random
-	 * available port is chosen.
+	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
 	 * 
 	 * @param InetSocketAddress the local address to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
@@ -106,7 +106,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * Connect to the specified address and port on the remote machine.
 	 * 
 	 * @param remote the remote address
-	 * @param port the remote port
+	 * @param port   the remote port
 	 * @throws IOException if the {@link Socket} cannot be connected
 	 */
 	public void connect(InetAddress remote, int port) throws IOException {
@@ -127,7 +127,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 				super.start();
 			}
 
-			events.handle(new ClientConnectedEvent(this, clientServer));
+			dispatchEvent(new ClientConnectedEvent(this, clientServer));
 		} catch (SocketTimeoutException e) {
 			close();
 			throw new P4JClientException("Connection timed out", e);
@@ -140,7 +140,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		} catch (IOException e) {
 			close();
 			throw new P4JClientException(e);
-		} catch(IllegalStateException e) {
+		} catch (IllegalStateException e) {
 			close();
 			throw new P4JClientException(e);
 		}
@@ -208,11 +208,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 
-			events.handle(new ClientReadPacketEvent(this, packet, packets.getClass(id)));
+			dispatchEvent(new S2CReadPacketEvent(this, packet, packets.getClass(id)));
 
 			packet.clientRead(this, obj);
 		} catch (Exception e) {
-			events.handle(new ClientReadPacketEvent(this, id, e));
+			dispatchEvent(new S2CReadPacketEvent(this, id, e));
 			handleException("read_handleRawPacket", e);
 		}
 	}
@@ -221,8 +221,6 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		try {
 			Object obj = packet.clientWrite(this);
 			ByteBuffer content = codec.encode(obj);
-			// System.err.println("client sent: " +
-			// PCUtils.byteBufferToHexString(content));
 			content = encryption.encrypt(content);
 			content = compression.compress(content);
 
@@ -232,8 +230,6 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			bb.put(content);
 			bb.flip();
 
-			// System.out.println("client#write: "+PCUtils.byteBufferToHexString(bb));
-
 			if (bb.hasArray()) {
 				outputStream.write(bb.array());
 			} else {
@@ -242,11 +238,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 			outputStream.flush();
 
-			events.handle(new ClientWritePacketEvent(this, packet));
+			dispatchEvent(new C2SWritePacketEvent(this, packet));
 
 			return true;
 		} catch (Exception e) {
-			events.handle(new ClientWritePacketEvent(this, packet, e));
+			dispatchEvent(new C2SWritePacketEvent(this, packet, e));
 			handleException("write", e);
 			return false;
 		}
@@ -262,14 +258,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		if (!clientStatus.equals(ClientStatus.LISTENING)) {
 			clientStatus = ClientStatus.CLOSED;
 			return;
-			//throw new P4JClientException("Cannot close not started client socket.");
 		}
 
 		try {
 			clientStatus = ClientStatus.CLOSING;
-			// this.interrupt(); // No need to interrupt because will stop reading after
-			// soTimeout
-			if(clientSocket != null) {
+			if (clientSocket != null) {
 				clientSocket.close();
 			}
 			clientStatus = ClientStatus.CLOSED;
@@ -277,7 +270,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			clientSocket = null;
 			clientServer = null;
 
-			events.handle(new ClosedSocketEvent(null, this));
+			dispatchEvent(new ClosedSocketEvent(null, this));
 		} catch (IOException e) {
 			handleException("close", e);
 		}
@@ -287,8 +280,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * Handles the given exception in this server instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String the message (the context) ("read", "read_handleRawPacket",
-	 * "write", "close")
+	 * @param String    the message (the context) ("read", "read_handleRawPacket", "write", "close")
 	 * @param Exception the exception
 	 */
 	protected void handleException(String msg, Exception e) {
@@ -299,6 +291,12 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	public void registerPacket(Class<?> p, int id) {
 		packets.register(p, id);
+	}
+
+	public void dispatchEvent(P4JEvent event) {
+		if (eventManager == null)
+			return;
+		eventManager.dispatch(event);
 	}
 
 	public ClientStatus getClientStatus() {
@@ -336,8 +334,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		return packets;
 	}
 
-	public EventQueueConsumer getEventQueueConsumer() {
-		return events;
+	public EventManager getEventManager() {
+		return eventManager;
 	}
 
 	public void setCodec(CodecManager codec) {
@@ -356,8 +354,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		this.packets = packets;
 	}
 
-	public void setEventQueueConsumer(EventQueueConsumer events) {
-		this.events = events;
+	public void setEventManager(EventManager eventManager) {
+		this.eventManager = eventManager;
 	}
 
 }

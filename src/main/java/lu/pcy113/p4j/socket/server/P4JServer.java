@@ -13,17 +13,19 @@ import java.util.Set;
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.EventQueueConsumer;
+import lu.pcy113.p4j.events.P4JEvent;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.pclib.listener.EventManager;
+import lu.pcy113.pclib.listener.SyncEventManager;
 
 public class P4JServer extends Thread implements P4JInstance, P4JServerInstance {
 
 	private ServerStatus serverStatus = ServerStatus.PRE;
 
-	public EventQueueConsumer events = EventQueueConsumer.IGNORE;
+	private EventManager eventManager = new SyncEventManager();
 
 	private CodecManager codec;
 	private EncryptionManager encryption;
@@ -35,12 +37,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
-	
+
 	/**
 	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
 	 * 
-	 * @param CodecManager the server codec manager 
-	 * @param EntryptionManager the server encryption manager
+	 * @param CodecManager       the server codec manager
+	 * @param EntryptionManager  the server encryption manager
 	 * @param CompressionManager the server compression manager
 	 */
 	public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com) {
@@ -50,25 +52,22 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		this.clientManager = new ClientManager(this);
 	}
 
-	/*public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com, ClientManager clientManager) {
-		this.codec = cm;
-		this.encryption = em;
-		this.compression = com;
-		this.clientManager = clientManager;
-	}*/
-	
+	/*
+	 * public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com, ClientManager clientManager) { this.codec = cm; this.encryption = em; this.compression = com; this.clientManager = clientManager; }
+	 */
+
 	/**
 	 * Binds the current server to the local address.
 	 * 
 	 * @param InetSocketAddress the local address to bind to
-	 * @throws IOException if the {@link ServerSocketChannel} or {@link Selector} cannot be opened or bound
+	 * @throws IOException        if the {@link ServerSocketChannel} or {@link Selector} cannot be opened or bound
 	 * @throws P4JServerException if the server is already bound
 	 */
 	public void bind(InetSocketAddress isa) throws IOException {
-		if(!serverStatus.equals(ServerStatus.PRE)) {
+		if (!serverStatus.equals(ServerStatus.PRE)) {
 			throw new P4JServerException("Server already bound");
 		}
-		
+
 		serverSocketSelector = Selector.open();
 		serverSocketChannel = ServerSocketChannel.open();
 		serverSocketChannel.socket().bind(isa);
@@ -78,8 +77,6 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 
 		this.localInetSocketAddress = new InetSocketAddress(serverSocketChannel.socket().getInetAddress(), serverSocketChannel.socket().getLocalPort());
 		super.setName("P4JServer@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
-
-		// super.start();
 	}
 
 	public void run() {
@@ -111,7 +108,6 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 					} else if (key.isWritable()) {
 						SocketChannel clientChannel = (SocketChannel) key.channel();
 						clientChannel.socket().getOutputStream().flush();
-						//System.out.println("server#read: flushed");
 					}
 
 					keyIterator.remove();
@@ -126,7 +122,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	 * Handles the given exception in this server instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String the message (the context) ("run", "close")
+	 * @param String    the message (the context) ("run", "close")
 	 * @param Exception the exception
 	 */
 	protected void handleException(String msg, Exception e) {
@@ -139,7 +135,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	 * 
 	 * @param S2CPacket the packet to send
 	 */
-	public void broadcast(S2CPacket packet) {
+	public void broadcast(S2CPacket<?> packet) {
 		for (ServerClient sc : clientManager.getAllClients()) {
 			sc.write(packet);
 		}
@@ -194,6 +190,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	public void registerPacket(Class<?> p, int id) {
 		packets.register(p, id);
 	}
+	
+	public void dispatchEvent(P4JEvent event) {
+		if(eventManager == null)
+			return;
+		eventManager.dispatch(event);
+	}
 
 	public ServerStatus getServerStatus() {
 		return serverStatus;
@@ -234,8 +236,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		return clientManager;
 	}
 
-	public EventQueueConsumer getEventQueueConsumer() {
-		return events;
+	public EventManager getEventManager() {
+		return eventManager;
 	}
 
 	public void setCodec(CodecManager codec) {
@@ -258,8 +260,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		this.clientManager = clientManager;
 	}
 
-	public void setEventQueueConsumer(EventQueueConsumer events) {
-		this.events = events;
+	public void setEventManager(EventManager eventManager) {
+		this.eventManager = eventManager;
 	}
 
 }

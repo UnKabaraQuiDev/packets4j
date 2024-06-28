@@ -7,9 +7,9 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.UUID;
 
-import lu.pcy113.p4j.events.ClientReadPacketEvent;
-import lu.pcy113.p4j.events.ClientWritePacketEvent;
+import lu.pcy113.p4j.events.C2SReadPacketEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
+import lu.pcy113.p4j.events.S2CWritePacketEvent;
 import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -78,13 +78,13 @@ public class ServerClient implements P4JClientInstance {
 
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 
-			server.events.handle(new ClientReadPacketEvent(this, packet, server.getPackets().getClass(id)));
+			server.dispatchEvent(new C2SReadPacketEvent(this, packet, server.getPackets().getClass(id)));
 
 			packet.serverRead(this, obj);
 		} catch (UnknownPacketException e) {
-			server.events.handle(new ClientReadPacketEvent(this, id, e));
+			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
 		} catch (Exception e) {
-			server.events.handle(new ClientReadPacketEvent(this, id, e));
+			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
 			handleException("read_handleRawPacket", e);
 		}
 	}
@@ -109,10 +109,10 @@ public class ServerClient implements P4JClientInstance {
 
 			int length = socketChannel.write(bb);
 
-			server.events.handle(new ClientWritePacketEvent(this, packet));
+			server.dispatchEvent(new S2CWritePacketEvent(this, packet));
 			return true;
 		} catch (Exception e) {
-			server.events.handle(new ClientWritePacketEvent(this, packet, e));
+			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
 			handleException("write", e);
 			return false;
 		}
@@ -144,7 +144,7 @@ public class ServerClient implements P4JClientInstance {
 			socketChannel.close();
 			serverClientStatus = ServerClientStatus.CLOSED;
 
-			server.events.handle(new ClosedSocketEvent(null, this));
+			server.dispatchEvent(new ClosedSocketEvent(null, this));
 		} catch (IOException e) {
 			handleException("close", e);
 		}

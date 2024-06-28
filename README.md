@@ -144,38 +144,55 @@ The `CompressionManager` class is responsible for managing the compressing and d
 ------
 
 ## Events
-There are 3 default EventQueueConsumer:
-- `AsyncEcventQueueConsumer` handles events asyncronously, in a separate thread.
-- `SyncQueueConsumer` handles in the same thread it was called in.
-- `EventQueueConsumer.IGNORE` ignores all event, default consumer.
+There are 2 default EventManagers:
+- `AsyncEventManager` handles events asyncronously, in a separate thread pool.
+- `EventManager` ignores all event, default consumer.
 
-**Registering an EventQueueConsumer**:<br>
-`P4JServer.setEventQueueConsumer(<consumer>)`<br>
-`P4JCient.setEventQueueConsumer(<consumer>)`<br>
-**Adding a Listener**:<br>
-`P4JServer.events.addListener(<listener>)`<br>
-`P4JClient.events.addListener(<listener>)`<br>
+**Changing the default EventManager**:<br>
+*The default is SyncEventManager*<br>
+`P4JServer.setEventManager(<consumer>)`<br>
+`P4JCient.setEventManager(<consumer>)`<br>
 
+**Adding an EventListener**:<br>
+`P4JServer.getEventManager().register(<listener>)`<br>
+`P4JClient.getEventManager().register(<listener>)`<br>
 
-There are multiple events:
-- ClientConnectedEvent(P4JClientInstance, P4JServerInstance): When a client connects to a server.<br>
-Server side: ServerClient -> P4JServer
+**EventListener usage:**<br>
+- The `@ListenerPriority` (optional) annotation is used to change the listener's priority *(higher = executed earlier, default is 0)*
+- The `@EventHandler` annotation is used to mark methods to handle the event specified by the first parameter.
+*Example*:
+```java
+@ListenerPriority(priority = 10)
+public class MyEventListener implements EventListener {
+	@EventHandler
+	public void onClientConnect(ClientConnectedEvent event) {
+		// do something
+	}
+	// the name doesn't matter
+	@EventHandler
+	public void kjwdsfkjhsf(P4JEvent event) {
+		// do something
+	}
+}
+````
+
+There are multiple events (*implementing `P4JEvent`*):
+- `ClientConnectedEvent(P4JClientInstance, P4JServerInstance)`: When a client connects to a server.<br>
+Server side: ServerClient -> P4JServer<br>
 Client side: P4JClient -> ClientServer
-- ClientReadPacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean): When a client reads an incoming packet.
-- ClientWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean): When a client writes an outgoing packet.
-- ClosedChannelEvent(ClosedChannelException, P4JClientInstance): When a client gets closed.
+- `S2CReadPacketEvent(P4JInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a client reads an incoming packet from the server.
+- `S2CWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a server writes an outgoing packet to the client.
+- `C2SReadPacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a server reads an incoming packet from the client.
+- `C2SWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a client writes an outgoing packet to the server.
+- `ClosedSocketEvent(ClosedChannelException, P4JClientInstance)`: When a client connection gets closed.
 
 
 ------
 
 ## Examples
-See [Cat Dog Question Example](/examples/catdog/CatDogExample.md)
+See [Cat Dog Question Example](/src/main/examples/catdog/CatDogExample.md)
 
 ------
 
 ## Compiling
-To compile use `build/build.sh`; the arguments:<br>
-(Optional) -version:{version}: Provide a version to compile the sources, will use [`src/lu.pcy113/p4j/version.txt`](src/lu.pcy113/p4j/version.txt) if not provided.<br>
-(Optional) -main:{class}: Provide a class name as main class for the jar file.<br>
-(Optional) -cp:{classpath}: Provide a classpath for compiling, separated by semicolons `;`<br>
-(Optional) -regex:{regex}: File selector for files passed to the compiler, default is `*.java`<br>
+To compile use maven, implemented options are: `test`, `package`, `install` *& defaults*

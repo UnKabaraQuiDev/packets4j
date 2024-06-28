@@ -14,8 +14,8 @@ public static class S2C_CatDogPacket implements S2CPacket<Object[]> {
 
 	// Gets called when a Client receives this packet from the connected server
 	public void clientRead(P4JClient client, Object[] input) {
-		System.out.println("Question received: ");
-		System.out.println(Arrays.toString(input));
+		GlobalLogger.info("Question received: ");
+		GlobalLogger.info(Arrays.toString(input));
 		Random r = new Random();
 		int choiceIndex = r.nextInt(input.length);
 
@@ -26,7 +26,7 @@ public static class S2C_CatDogPacket implements S2CPacket<Object[]> {
 	// Gets called when using ServerClient.write(new S2C_CatDogPacket())
 	// Returns the value to be sent
 	public Object[] serverWrite(ServerClient client) {
-		System.out.println("Asked to client");
+		GlobalLogger.info("Asked to client");
 		return new String[] { "Dog", "or", "Cat" };
 	}
 }
@@ -41,20 +41,20 @@ public static class C2S_CatDogPacket implements C2SPacket<String> {
 	}
 
 	public C2S_CatDogPacket(String choice) {
-		System.out.println("Choice prepared: " + choice);
+		GlobalLogger.info("Choice prepared: " + choice);
 		this.choice = choice;
 	}
 
 	// Gets called when using P4JClient.write(new C2S_CatDogPacket())
 	// Returns the value to be sent
 	public String clientWrite(P4JClient client) {
-		System.out.println("Responding to server: " + choice);
+		GlobalLogger.info("Responding to server: " + choice);
 		return this.choice;
 	}
 
 	// Gets called when a Server receives this packet from a connected Client
 	public void serverRead(ServerClient sclient, String obj) {
-		System.out.println("Client answered: " + obj);
+		GlobalLogger.info("Client answered: " + obj);
 	}
 }
 ```
@@ -70,26 +70,26 @@ server = new P4JServer(serverCodec, serverEncryption, serverCompression);
 server.setEventQueueConsumer(new AsyncEventQueueConsumer());
 
 // Attach a listener to handle new connected clients
-server.events.addListener(new Listener() {
+server.events.addListener(new EventListener() {
 	@Override
 	public void handle(Event event) { // conntected
-		System.out.println("Server event: " + event.getClass().getSimpleName());
+		GlobalLogger.info("Server event: " + event.getClass().getSimpleName());
 		if (event instanceof ClientConnectedEvent) {
-			System.out.println("Server ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+			GlobalLogger.info("Server ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
 			sendChoiceRequest((ServerClient) ((ClientConnectedEvent) event).getClient()); // See "Send Packets"
 		}
 		
 		if (event instanceof ClientWritePacketEvent)
 			if(((ClientWritePacketEvent) event).hasFailed())
-				System.out.println("Server ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+				GlobalLogger.info("Server ClientWritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
 			else
-				System.out.println("Server ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+				GlobalLogger.info("Server ClientWritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
 		
 		if (event instanceof ClientReadPacketEvent)
 			if(((ClientReadPacketEvent) event).hasFailed())
-				System.out.println("Server ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+				GlobalLogger.info("Server ClientReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
 			else
-				System.out.println("Server ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+				GlobalLogger.info("Server ClientReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
 			
 	}
 });
@@ -103,12 +103,12 @@ server.registerPacket(S2C_CatDogPacket.class, 2);
 
 // Bind to the local port
 server.bind(new InetSocketAddress(8090));
-System.out.println("Server bound to port: " + server.getPort());
+GlobalLogger.info("Server bound to port: " + server.getPort());
 
 // Set as listening and accepting clients
 // Starts the server thread
 server.setAccepting();
-System.out.println("Server listening and accepting clients");
+GlobalLogger.info("Server listening and accepting clients");
 ```
 
 Create a Client:
@@ -120,24 +120,24 @@ CompressionManager clientCompression = CompressionManager.raw();
 client = new P4JClient(clientCodec, clientEncryption, clientCompression);
 client.setEventQueueConsumer(new AsyncEventQueueConsumer());
 
-client.events.addListener(new Listener() {
+client.events.addListener(new EventListener() {
 	@Override
 	public void handle(Event event) { // conntected
-		System.out.println("Server event: " + event.getClass().getSimpleName());
+		GlobalLogger.info("Server event: " + event.getClass().getSimpleName());
 		if (event instanceof ClientConnectedEvent)
-			System.out.println("Client ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
+			GlobalLogger.info("Client ClientConnectedEvent: "+((ClientConnectedEvent) event).getClient());
 		
 		if (event instanceof ClientWritePacketEvent)
 			if(((ClientWritePacketEvent) event).hasFailed())
-				System.out.println("Client WritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
+				GlobalLogger.info("Client WritePacketEvent failed: " + ((ClientWritePacketEvent) event).getException());
 			else
-				System.out.println("Client WritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
+				GlobalLogger.info("Client WritePacketEvent: " + ((ClientWritePacketEvent) event).getPacket());
 		
 		if (event instanceof ClientReadPacketEvent)
 			if(((ClientReadPacketEvent) event).hasFailed())
-				System.out.println("Client ReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
+				GlobalLogger.info("Client ReadPacketEvent failed: " + ((ClientReadPacketEvent) event).getException());
 			else
-				System.out.println("Client ReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
+				GlobalLogger.info("Client ReadPacketEvent: " + ((ClientReadPacketEvent) event).getPacket());
 	}
 });
 
@@ -147,14 +147,14 @@ client.registerPacket(S2C_CatDogPacket.class, 2);
 
 // Bind without any argument takes a free port, a specific port can be passed as argument
 client.bind();
-System.out.println("Client bound to port: " + client.getPort());
+GlobalLogger.info("Client bound to port: " + client.getPort());
 ```
 
 Connect the Client:
 ```java
 // Connect to the server
 client.connect(server.getLocalInetSocketAddress());
-System.out.println("Client connected");
+GlobalLogger.info("Client connected");
 ```
 
 Send Packets:
@@ -162,10 +162,10 @@ Send Packets:
 // See "Create a Server"
 // This function gets called when a new client connects
 private static void sendChoiceRequest(ServerClient client) {
-	System.out.println("Client connected to server");
+	GlobalLogger.info("Client connected to server");
 
 	// Send a packet to the newly connected client
-	System.out.println("Packet sent to client: " + client.write(new  S2C_CatDogPacket()));
+	GlobalLogger.info("Packet sent to client: " + client.write(new  S2C_CatDogPacket()));
 
 	// OR
 
@@ -212,6 +212,6 @@ client.join();
 server.close();
 server.join();
 
-System.out.println("Client: "+client.isAlive()+", "+client.getState()+" and "+client.getClientStatus());
-System.out.println("Server: "+server.isAlive()+", "+server.getState()+" and "+server.getServerStatus());
+GlobalLogger.info("Client: "+client.isAlive()+", "+client.getState()+" and "+client.getClientStatus());
+GlobalLogger.info("Server: "+server.isAlive()+", "+server.getState()+" and "+server.getServerStatus());
 ```

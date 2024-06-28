@@ -46,7 +46,7 @@ public class ClientManager {
 	public void register(SocketChannel sc) {
 		ServerClient sclient = clientCreationCallback.apply(sc);
 		registerClient(sclient);
-		server.events.handle(new ClientConnectedEvent(sclient, server));
+		server.dispatchEvent(new ClientConnectedEvent(sclient, server));
 	}
 
 	/**
