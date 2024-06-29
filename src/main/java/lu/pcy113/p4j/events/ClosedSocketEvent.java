@@ -14,6 +14,10 @@ public class ClosedSocketEvent implements P4JEvent {
 		this.client = op;
 	}
 
+	public ClosedSocketEvent(P4JClientInstance client) {
+		this.client = client;
+	}
+
 	public boolean isFail() {
 		return exception != null;
 	}

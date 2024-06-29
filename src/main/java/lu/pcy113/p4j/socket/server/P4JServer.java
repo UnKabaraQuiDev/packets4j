@@ -90,6 +90,10 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 				while (keyIterator.hasNext()) {
 					SelectionKey key = keyIterator.next();
 
+					if(!key.isValid()) {
+						continue;
+					}
+					
 					if (key.isAcceptable()) {
 						// Accept a new client connection
 						ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();

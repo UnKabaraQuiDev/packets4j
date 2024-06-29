@@ -40,23 +40,27 @@ public class ServerClient implements P4JClientInstance {
 
 	public void read() {
 		try {
-			ByteBuffer bb = ByteBuffer.allocateDirect(4);
-			if (socketChannel.read(bb) != 4)
+			final ByteBuffer bb = ByteBuffer.allocateDirect(4);
+			final int bytesRead = socketChannel.read(bb);
+			if(bytesRead == -1) {
+				server.dispatchEvent(new ClosedSocketEvent(this));
+				close();
+				return;
+			}
+			
+			if (bytesRead != 4)
 				return;
 
 			bb.flip();
-			int length = bb.getInt();
+			final int length = bb.getInt();
 			bb.clear();
 
-			ByteBuffer content = ByteBuffer.allocateDirect(length);
+			final ByteBuffer content = ByteBuffer.allocateDirect(length);
 			if (socketChannel.read(content) != length)
 				return;
 
 			content.flip();
-			int id = content.getInt();
-
-			// System.out.println("serverclient#read:
-			// "+PCUtils.byteBufferToHexString(content));
+			final int id = content.getInt();
 
 			read_handleRawPacket(id, content);
 
@@ -64,7 +68,8 @@ public class ServerClient implements P4JClientInstance {
 		} catch (ClosedByInterruptException e) {
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException e) {
-			// ignore
+			server.dispatchEvent(new ClosedSocketEvent(e, this));
+			close();
 		} catch (IOException e) {
 			handleException("read", e);
 		}
@@ -111,6 +116,11 @@ public class ServerClient implements P4JClientInstance {
 
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet));
 			return true;
+		} catch (ClosedChannelException e) {
+			server.dispatchEvent(new ClosedSocketEvent(e, this));
+			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
+			handleException("write", e);
+			return false;
 		} catch (Exception e) {
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
 			handleException("write", e);
@@ -143,8 +153,6 @@ public class ServerClient implements P4JClientInstance {
 			serverClientStatus = ServerClientStatus.CLOSING;
 			socketChannel.close();
 			serverClientStatus = ServerClientStatus.CLOSED;
-
-			server.dispatchEvent(new ClosedSocketEvent(null, this));
 		} catch (IOException e) {
 			handleException("close", e);
 		}

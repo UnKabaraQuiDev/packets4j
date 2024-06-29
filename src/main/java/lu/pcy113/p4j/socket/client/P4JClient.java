@@ -165,20 +165,26 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 	public void read() {
 		try {
-			byte[] bb = new byte[4];
-			if (inputStream.read(bb) != 4) {
+			final byte[] bb = new byte[4];
+			final int bytesRead = inputStream.read(bb);
+			if (bytesRead == -1) {
+				dispatchEvent(new ClosedSocketEvent(this));
+				close();
+				return;
+			}
+			if (bytesRead != 4) {
 				return;
 			}
 
-			int length = PCUtils.byteToInt(bb);
+			final int length = PCUtils.byteToInt(bb);
 
-			byte[] cc = new byte[length];
+			final byte[] cc = new byte[length];
 			if (inputStream.read(cc) != length) {
 				return;
 			}
 
-			ByteBuffer content = ByteBuffer.wrap(cc);
-			int id = content.getInt();
+			final ByteBuffer content = ByteBuffer.wrap(cc);
+			final int id = content.getInt();
 
 			read_handleRawPacket(id, content);
 		} catch (NotYetConnectedException e) {
@@ -241,6 +247,10 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 			dispatchEvent(new C2SWritePacketEvent(this, packet));
 
 			return true;
+		} catch (ClosedChannelException e) {
+			dispatchEvent(new ClosedSocketEvent(e, this));
+			close();
+			return false;
 		} catch (Exception e) {
 			dispatchEvent(new C2SWritePacketEvent(this, packet, e));
 			handleException("write", e);
@@ -269,8 +279,6 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 			clientSocket = null;
 			clientServer = null;
-
-			dispatchEvent(new ClosedSocketEvent(null, this));
 		} catch (IOException e) {
 			handleException("close", e);
 		}
