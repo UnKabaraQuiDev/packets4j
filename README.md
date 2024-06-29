@@ -146,7 +146,7 @@ The `CompressionManager` class is responsible for managing the compressing and d
 ## Events
 There are 2 default EventManagers:
 - `AsyncEventManager` handles events asyncronously, in a separate thread pool.
-- `EventManager` ignores all event, default consumer.
+- `EventManager` handles events syncronously, default EventManager.
 
 **Changing the default EventManager**:<br>
 *The default is SyncEventManager*<br>
