@@ -84,7 +84,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
 	public void bind(int port) throws IOException {
-		bind(new InetSocketAddress(port));
+		bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
 	}
 
 	/**
@@ -259,12 +259,24 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	}
 
 	/**
+	 * Disconnects & closes the client socket<br>
+	 * And dispatches a {@link ClosedSocketEvent}.
+	 * 
+	 * @see #close()
+	 * @throws P4JClientException if the client isn't started
+	 */
+	public void disconnect() {
+		close();
+		dispatchEvent(new ClosedSocketEvent(this));
+	}
+	
+	/**
 	 * Closes the client socket.<br>
 	 * The client' socket will be closed and the port will be released.
 	 * 
 	 * @throws P4JClientException if the client isn't started
 	 */
-	public void close() {
+	protected void close() {
 		if (!clientStatus.equals(ClientStatus.LISTENING)) {
 			clientStatus = ClientStatus.CLOSED;
 			return;

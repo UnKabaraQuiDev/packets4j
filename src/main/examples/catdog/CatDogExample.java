@@ -80,7 +80,7 @@ public class CatDogExample {
 
 		Thread.sleep(2000);
 
-		client.close();
+		client.disconnect();
 		client.join();
 		server.close();
 		server.join();
