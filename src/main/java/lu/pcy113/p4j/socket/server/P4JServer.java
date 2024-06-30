@@ -2,12 +2,14 @@ package lu.pcy113.p4j.socket.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.Objects;
 import java.util.Set;
 
 import lu.pcy113.jbcodec.CodecManager;
@@ -18,10 +20,11 @@ import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
 
-public class P4JServer extends Thread implements P4JInstance, P4JServerInstance {
+public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher {
 
 	private ServerStatus serverStatus = ServerStatus.PRE;
 
@@ -90,10 +93,10 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 				while (keyIterator.hasNext()) {
 					SelectionKey key = keyIterator.next();
 
-					if(!key.isValid()) {
+					if (!key.isValid()) {
 						continue;
 					}
-					
+
 					if (key.isAcceptable()) {
 						// Accept a new client connection
 						ServerSocketChannel serverChannel = (ServerSocketChannel) key.channel();
@@ -117,6 +120,9 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 					keyIterator.remove();
 				}
 			}
+		} catch (ClosedByInterruptException e) {
+			Thread.interrupted(); // clear interrupt flag
+			// ignore because triggered in #close()
 		} catch (IOException e) {
 			handleException("run", e);
 		}
@@ -140,6 +146,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	 * @param S2CPacket the packet to send
 	 */
 	public void broadcast(S2CPacket<?> packet) {
+		Objects.requireNonNull(packet);
+
 		for (ServerClient sc : clientManager.getAllClients()) {
 			sc.write(packet);
 		}
@@ -154,6 +162,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	public void setAccepting() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client accept mode.");
+		
 		serverStatus = ServerStatus.ACCEPTING;
 
 		if (!super.isAlive()) {
@@ -161,6 +170,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 		}
 	}
 
+	public void disconnectAll() {
+		for(ServerClient sc : clientManager.getAllClients()) {
+			sc.disconnect();
+		}
+	}
+	
 	/**
 	 * Closes the server socket.<br>
 	 * The server will no longer accept new client connections, all clients will be forcefully disconnected and the local port is released.
@@ -172,6 +187,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 			throw new P4JServerException("Cannot close not started server socket.");
 
 		try {
+			serverStatus = ServerStatus.CLOSING;
+			this.interrupt();
 			serverSocketChannel.close();
 			serverStatus = ServerStatus.CLOSED;
 		} catch (IOException e) {
@@ -188,17 +205,19 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 	public void setRefusing() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client refuse mode.");
+		
 		this.serverStatus = ServerStatus.REFUSING;
 	}
 
 	public void registerPacket(Class<?> p, int id) {
 		packets.register(p, id);
 	}
-	
+
 	public void dispatchEvent(P4JEvent event) {
-		if(eventManager == null)
+		if (eventManager == null)
 			return;
-		eventManager.dispatch(event);
+
+		eventManager.dispatch(event, this);
 	}
 
 	public ServerStatus getServerStatus() {
@@ -266,6 +285,11 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance 
 
 	public void setEventManager(EventManager eventManager) {
 		this.eventManager = eventManager;
+	}
+
+	@Override
+	public String toString() {
+		return this.getClass().getName() + "#" + hashCode() + "@{local=" + localInetSocketAddress + ", status=" + serverStatus + ", thread=" + super.toString() + "}";
 	}
 
 }

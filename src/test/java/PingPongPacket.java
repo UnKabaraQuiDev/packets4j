@@ -7,10 +7,10 @@ import lu.pcy113.pclib.logger.GlobalLogger;
 public class PingPongPacket implements C2SPacket<Long>, S2CPacket<Long> {
 
 	private long current;
-	
+
 	public PingPongPacket() {
 	}
-	
+
 	public PingPongPacket(long l) {
 		current = l;
 	}
@@ -24,7 +24,7 @@ public class PingPongPacket implements C2SPacket<Long>, S2CPacket<Long> {
 	@Override
 	public void serverRead(ServerClient sclient, Long obj) {
 		GlobalLogger.info("server read");
-		sclient.write(new PingPongPacket(obj));
+		GlobalLogger.info("server packet sent: "+sclient.write(new PingPongPacket(obj)));
 	}
 
 	@Override

@@ -1,5 +1,6 @@
 package lu.pcy113.p4j.socket.client;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,6 +31,7 @@ import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.pclib.PCUtils;
+import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
 
@@ -38,7 +40,7 @@ import lu.pcy113.pclib.listener.SyncEventManager;
  * 
  * @author pcy113
  */
-public class P4JClient extends Thread implements P4JInstance, P4JClientInstance {
+public class P4JClient extends Thread implements P4JInstance, P4JClientInstance, EventDispatcher, Closeable {
 
 	private ClientStatus clientStatus = ClientStatus.PRE;
 
@@ -160,7 +162,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		while (clientStatus.equals(ClientStatus.LISTENING)) {
 			read();
 		}
-		clientStatus = ClientStatus.CLOSED;
+		// clientStatus = ClientStatus.CLOSED;
 	}
 
 	public void read() {
@@ -190,6 +192,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 		} catch (NotYetConnectedException e) {
 			handleException("read", e);
 		} catch (ClosedByInterruptException e) {
+			Thread.interrupted(); // clear interrupt flag
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException e) {
 			// ignore
@@ -272,11 +275,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	
 	/**
 	 * Closes the client socket.<br>
-	 * The client' socket will be closed and the port will be released.
+	 * The client' socket will be closed and the port will be released.<br>
+	 * Doesn't dispatch a {@link ClosedSocketEvent}.
 	 * 
+	 * @see {@link #disconnect()}
 	 * @throws P4JClientException if the client isn't started
 	 */
-	protected void close() {
+	@Override
+	public void close() {
 		if (!clientStatus.equals(ClientStatus.LISTENING)) {
 			clientStatus = ClientStatus.CLOSED;
 			return;
@@ -284,6 +290,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 
 		try {
 			clientStatus = ClientStatus.CLOSING;
+			this.interrupt();
 			if (clientSocket != null) {
 				clientSocket.close();
 			}
@@ -316,7 +323,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance 
 	public void dispatchEvent(P4JEvent event) {
 		if (eventManager == null)
 			return;
-		eventManager.dispatch(event);
+		
+		eventManager.dispatch(event, this);
 	}
 
 	public ClientStatus getClientStatus() {

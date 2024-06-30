@@ -10,8 +10,10 @@ import lu.pcy113.p4j.events.ClientConnectedEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.socket.client.P4JClient;
 import lu.pcy113.p4j.socket.server.P4JServer;
+import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventHandler;
 import lu.pcy113.pclib.listener.EventListener;
+import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.logger.GlobalLogger;
 
 public class EventMain {
@@ -25,13 +27,13 @@ public class EventMain {
 		}
 
 		@EventHandler
-		public void onConnect(ClientConnectedEvent evt) {
-			GlobalLogger.log(target + " client connected: " + evt.getClient());
+		public void onConnect(ClientConnectedEvent evt, EventManager em, EventDispatcher dispatcher) {
+			GlobalLogger.log(target + " client connected: " + evt.getClient() + " from: " + dispatcher);
 		}
 
 		@EventHandler
-		public void onClosed(ClosedSocketEvent evt) {
-			GlobalLogger.log(target + " socket closed: " + evt.getClient());
+		public void onClosed(ClosedSocketEvent evt, EventManager em, EventDispatcher dispatcher) {
+			GlobalLogger.log(target + " socket closed: " + evt.getClient() + " from: " + dispatcher);
 		}
 	}
 
@@ -63,12 +65,18 @@ public class EventMain {
 			GlobalLogger.info("client sent packet: " + client.write(new PingPongPacket()));
 
 			Thread.sleep(2000); // simulate traffic
-			
-			client.disconnect();
-			GlobalLogger.info("client closed");
 
+			client.disconnect();
+			GlobalLogger.info("client closed waiting for thread to end");
 			client.join();
+			GlobalLogger.info("client thread ended");
+			
+			server.disconnectAll();
+			GlobalLogger.info("server disconnected all clients");
 			server.close();
+			GlobalLogger.info("server closed waiting for thread to end");
+			client.join();
+			GlobalLogger.info("server thread ended");
 		} catch (Exception e) {
 			e.printStackTrace();
 			assert false;

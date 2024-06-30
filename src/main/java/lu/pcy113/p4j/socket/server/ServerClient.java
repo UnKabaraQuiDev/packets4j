@@ -1,10 +1,12 @@
 package lu.pcy113.p4j.socket.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
+import java.util.Objects;
 import java.util.UUID;
 
 import lu.pcy113.p4j.events.C2SReadPacketEvent;
@@ -17,10 +19,9 @@ import lu.pcy113.p4j.socket.P4JClientInstance;
 import lu.pcy113.p4j.socket.client.P4JClientException;
 
 /**
- * Represents a P4JServer's client. This is a wrapper around a {@link SocketChannel} that represents a client connected to the server, 
- * on the server-side.
+ * Represents a P4JServer's client. This is a wrapper around a {@link SocketChannel} that represents a client connected to the server, on the server-side.
  */
-public class ServerClient implements P4JClientInstance {
+public class ServerClient implements P4JClientInstance, Closeable {
 
 	private ServerClientStatus serverClientStatus = ServerClientStatus.PRE;
 
@@ -38,16 +39,16 @@ public class ServerClient implements P4JClientInstance {
 		this.serverClientStatus = ServerClientStatus.LISTENING;
 	}
 
-	public void read() {
+	public synchronized void read() {
 		try {
 			final ByteBuffer bb = ByteBuffer.allocateDirect(4);
 			final int bytesRead = socketChannel.read(bb);
-			if(bytesRead == -1) {
+			if (bytesRead == -1) {
 				server.dispatchEvent(new ClosedSocketEvent(this));
 				close();
 				return;
 			}
-			
+
 			if (bytesRead != 4)
 				return;
 
@@ -101,18 +102,20 @@ public class ServerClient implements P4JClientInstance {
 	 * @return If the packet was written successfully
 	 */
 	public synchronized boolean write(S2CPacket packet) {
+		Objects.requireNonNull(packet);
+		
 		try {
 			ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 			content = server.getEncryption().encrypt(content);
 			content = server.getCompression().compress(content);
 
-			ByteBuffer bb = ByteBuffer.allocateDirect(4 + 4 + content.capacity());
+			final ByteBuffer bb = ByteBuffer.allocateDirect(4 + 4 + content.capacity());
 			bb.putInt(content.limit() + 4); // Add id length
 			bb.putInt(server.getPackets().getId(packet.getClass()));
 			bb.put(content);
 			bb.flip();
 
-			int length = socketChannel.write(bb);
+			final int length = socketChannel.write(bb);
 
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet));
 			return true;
@@ -132,7 +135,7 @@ public class ServerClient implements P4JClientInstance {
 	 * Handles the given exception in this client instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String the message (the context) ("read", "read_handleRawPacket", "write", "close")
+	 * @param String    the message (the context) ("read", "read_handleRawPacket", "write", "close")
 	 * @param Exception the exception
 	 */
 	protected void handleException(String msg, Exception e) {
@@ -141,10 +144,25 @@ public class ServerClient implements P4JClientInstance {
 	}
 
 	/**
-	 * Closes the client socket.
+	 * Disconnects & closes the client socket<br>
+	 * And dispatches a {@link ClosedSocketEvent}.
 	 * 
+	 * @see #close()
 	 * @throws P4JClientException if the client socket is already closed or isn't started
 	 */
+	public void disconnect() {
+		close();
+		server.dispatchEvent(new ClosedSocketEvent(this));
+	}
+	
+	/**
+	 * Closes the client socket.<br>
+	 * Doesn't dispatch a {@link ClosedSocketEvent}.
+	 * 
+	 * @see {@link #disconnect()}
+	 * @throws P4JClientException if the client socket is already closed or isn't started
+	 */
+	@Override
 	public void close() {
 		if (serverClientStatus.equals(ServerClientStatus.CLOSED) || serverClientStatus.equals(ServerClientStatus.PRE))
 			throw new P4JClientException("Cannot close unstarted client socket.");
@@ -153,6 +171,8 @@ public class ServerClient implements P4JClientInstance {
 			serverClientStatus = ServerClientStatus.CLOSING;
 			socketChannel.close();
 			serverClientStatus = ServerClientStatus.CLOSED;
+			
+			server.getClientManager().remove(this);
 		} catch (IOException e) {
 			handleException("close", e);
 		}
@@ -168,6 +188,11 @@ public class ServerClient implements P4JClientInstance {
 
 	public UUID getUUID() {
 		return uuid;
+	}
+
+	@Override
+	public String toString() {
+		return getClass().getName() + "#" + hashCode() + "@{server=" + server + ", uuid=" + uuid + ", status=" + serverClientStatus + "}";
 	}
 
 }

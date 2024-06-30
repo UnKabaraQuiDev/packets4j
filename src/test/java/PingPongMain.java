@@ -15,7 +15,7 @@ public class PingPongMain {
 	@Test
 	public void pingpong() {
 		try {
-			if(!GlobalLogger.isInit()) {
+			if (!GlobalLogger.isInit()) {
 				GlobalLogger.init(null);
 			}
 
@@ -30,18 +30,24 @@ public class PingPongMain {
 			client.bind();
 			client.getPackets().register(PingPongPacket.class, 1);
 			client.connect(InetAddress.getLocalHost(), server.getLocalInetSocketAddress().getPort());
-			GlobalLogger.info(client.getLocalInetSocketAddress());
-			GlobalLogger.info(client.getClientServer().getRemoteInetSocketAddress());
+			GlobalLogger.info("client addr: " + client.getLocalInetSocketAddress());
+			GlobalLogger.info("client remote addr: " + client.getClientServer().getRemoteInetSocketAddress());
 
 			GlobalLogger.info("client done");
 
-			GlobalLogger.info(client.write(new PingPongPacket()));
+			GlobalLogger.info("client packet sent: " + client.write(new PingPongPacket()));
 
 			client.disconnect();
+			GlobalLogger.info("client closed waiting for thread to end");
 			client.join();
+			GlobalLogger.info("client thread ended");
 			
+			server.disconnectAll();
+			GlobalLogger.info("server disconnected all clients");
 			server.close();
-			server.join();
+			GlobalLogger.info("server closed waiting for thread to end");
+			client.join();
+			GlobalLogger.info("server thread ended");
 		} catch (Exception e) {
 			e.printStackTrace();
 			assert false;

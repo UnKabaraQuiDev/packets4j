@@ -85,5 +85,12 @@ public class ClientManager {
 	public Set<Entry<SocketChannel, ServerClient>> all() {
 		return clients.entrySet();
 	}
+	
+	/**
+	 * Unregister a {@link ServerClient}
+	 */
+	public void remove(ServerClient serverClient) {
+		clients.remove(serverClient.getSocketChannel());
+	}
 
 }

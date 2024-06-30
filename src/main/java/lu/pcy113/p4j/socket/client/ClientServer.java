@@ -19,4 +19,9 @@ public class ClientServer implements P4JServerInstance {
 		return remoteInetSocketAddress;
 	}
 
+	@Override
+	public String toString() {
+		return this.getClass().getName() + "#" + hashCode() + "@{" + remoteInetSocketAddress;
+	}
+
 }
