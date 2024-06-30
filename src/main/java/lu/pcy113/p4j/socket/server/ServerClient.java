@@ -109,15 +109,17 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			content = server.getEncryption().encrypt(content);
 			content = server.getCompression().compress(content);
 
+			final int id = server.getPackets().getId(packet.getClass());
+			
 			final ByteBuffer bb = ByteBuffer.allocateDirect(4 + 4 + content.capacity());
 			bb.putInt(content.limit() + 4); // Add id length
-			bb.putInt(server.getPackets().getId(packet.getClass()));
+			bb.putInt(id);
 			bb.put(content);
 			bb.flip();
 
 			final int length = socketChannel.write(bb);
 
-			server.dispatchEvent(new S2CWritePacketEvent(this, packet));
+			server.dispatchEvent(new S2CWritePacketEvent(this, packet, id));
 			return true;
 		} catch (ClosedChannelException e) {
 			server.dispatchEvent(new ClosedSocketEvent(e, this));
