@@ -84,9 +84,9 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 
-			server.dispatchEvent(new C2SReadPacketEvent(this, packet, server.getPackets().getClass(id)));
-
 			packet.serverRead(this, obj);
+			
+			server.dispatchEvent(new C2SReadPacketEvent(this, packet, server.getPackets().getClass(id)));
 		} catch (UnknownPacketException e) {
 			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
 		} catch (Exception e) {

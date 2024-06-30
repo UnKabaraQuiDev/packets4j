@@ -217,9 +217,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 
-			dispatchEvent(new S2CReadPacketEvent(this, packet, packets.getClass(id)));
-
 			packet.clientRead(this, obj);
+			
+			dispatchEvent(new S2CReadPacketEvent(this, packet, packets.getClass(id)));
 		} catch (Exception e) {
 			dispatchEvent(new S2CReadPacketEvent(this, id, e));
 			handleException("read_handleRawPacket", e);
