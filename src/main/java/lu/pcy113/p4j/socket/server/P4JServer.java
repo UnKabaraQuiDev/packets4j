@@ -11,6 +11,9 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
@@ -152,6 +155,45 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 			sc.write(packet);
 		}
 	}
+	
+	/**
+	 * Sends the packet provided by the supplier to all the connected clients.
+	 * 
+	 * @param S2CPacket the packet to send
+	 */
+	public void broadcast(Function<ServerClient, S2CPacket<?>> packetSupplier) {
+		for (ServerClient sc : clientManager.getAllClients()) {
+			sc.write(packetSupplier.apply(sc));
+		}
+	}
+
+	/**
+	 * Iterates over all the connected clients and sends the specified packet if the predicate's condition is met.
+	 * 
+	 * @param S2CPacket the packet to send
+	 */
+	public void broadcastIf(S2CPacket<?> packet, Predicate<ServerClient> condition) {
+		Objects.requireNonNull(packet);
+
+		for (ServerClient sc : clientManager.getAllClients()) {
+			if (condition.test(sc)) {
+				sc.write(packet);
+			}
+		}
+	}
+
+	/**
+	 * Iterates over all the connected clients and sends the , if the supplier's condition is met.
+	 * 
+	 * @param S2CPacket the packet to send
+	 */
+	public void broadcastIf(Function<ServerClient, S2CPacket<?>> packetSupplier, Predicate<ServerClient> condition) {
+		for (ServerClient sc : clientManager.getAllClients()) {
+			if (condition.test(sc)) {
+				sc.write(packetSupplier.apply(sc));
+			}
+		}
+	}
 
 	/**
 	 * Sets the server socket in client accept mode.<br>
@@ -162,7 +204,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	public void setAccepting() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client accept mode.");
-		
+
 		serverStatus = ServerStatus.ACCEPTING;
 
 		if (!super.isAlive()) {
@@ -171,11 +213,11 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	}
 
 	public void disconnectAll() {
-		for(ServerClient sc : clientManager.getAllClients()) {
+		for (ServerClient sc : clientManager.getAllClients()) {
 			sc.disconnect();
 		}
 	}
-	
+
 	/**
 	 * Closes the server socket.<br>
 	 * The server will no longer accept new client connections, all clients will be forcefully disconnected and the local port is released.
@@ -205,7 +247,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	public void setRefusing() {
 		if (serverStatus.equals(ServerStatus.CLOSED))
 			throw new P4JServerException("Cannot set closed server socket in client refuse mode.");
-		
+
 		this.serverStatus = ServerStatus.REFUSING;
 	}
 
