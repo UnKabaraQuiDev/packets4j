@@ -8,6 +8,8 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import lu.pcy113.pclib.PCUtils;
+
 public class AESEncryptor implements Encryptor {
 	private static final String ALGORITHM = "AES";
 
@@ -26,7 +28,7 @@ public class AESEncryptor implements Encryptor {
 	@Override
 	public ByteBuffer encrypt(ByteBuffer buffer) throws Exception {
 		cipher.init(Cipher.ENCRYPT_MODE, secretKey);
-		byte[] encryptedBytes = cipher.doFinal(buffer.array(), buffer.position(), buffer.remaining());
+		byte[] encryptedBytes = cipher.doFinal(PCUtils.toByteArray(buffer), buffer.position(), buffer.remaining());
 		return ByteBuffer.wrap(encryptedBytes);
 	}
 

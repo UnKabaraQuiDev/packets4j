@@ -8,6 +8,8 @@ import javax.crypto.Cipher;
 import javax.crypto.NoSuchPaddingException;
 import javax.crypto.spec.SecretKeySpec;
 
+import lu.pcy113.pclib.PCUtils;
+
 public class AESDecryptor implements Decryptor {
 	private static final String ALGORITHM = "AES";
 
@@ -26,7 +28,7 @@ public class AESDecryptor implements Decryptor {
 	@Override
 	public ByteBuffer decrypt(ByteBuffer buffer) throws Exception {
 		cipher.init(Cipher.DECRYPT_MODE, secretKey);
-		byte[] decryptedBytes = cipher.doFinal(buffer.array(), buffer.position(), buffer.remaining());
+		byte[] decryptedBytes = cipher.doFinal(PCUtils.toByteArray(buffer), buffer.position(), buffer.remaining());
 		return ByteBuffer.wrap(decryptedBytes);
 	}
 }
