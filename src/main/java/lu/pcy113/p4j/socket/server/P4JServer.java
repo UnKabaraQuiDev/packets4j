@@ -11,14 +11,15 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.function.Supplier;
 
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.P4JEvent;
+import lu.pcy113.p4j.exceptions.P4JServerException;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
@@ -43,6 +44,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
+
+	private Consumer<P4JServerException> exceptionConsumer = P4JServerException::printStackTrace;
 
 	/**
 	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
@@ -126,8 +129,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		} catch (ClosedByInterruptException e) {
 			Thread.interrupted(); // clear interrupt flag
 			// ignore because triggered in #close()
-		} catch (IOException e) {
-			handleException("run", e);
+		} catch (Exception e) {
+			handleException(new P4JServerException(e));
 		}
 	}
 
@@ -135,12 +138,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	 * Handles the given exception in this server instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String    the message (the context) ("run", "close")
 	 * @param Exception the exception
 	 */
-	protected void handleException(String msg, Exception e) {
-		System.err.println(getClass().getName() + "/" + localInetSocketAddress + "> " + msg + " ::");
-		e.printStackTrace(System.err);
+	private void handleException(P4JServerException e) {
+		if (exceptionConsumer != null) {
+			exceptionConsumer.accept(e);
+		}
 	}
 
 	/**
@@ -155,7 +158,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 			sc.write(packet);
 		}
 	}
-	
+
 	/**
 	 * Sends the packet provided by the supplier to all the connected clients.
 	 * 
@@ -234,7 +237,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 			serverSocketChannel.close();
 			serverStatus = ServerStatus.CLOSED;
 		} catch (IOException e) {
-			handleException("close", e);
+			handleException(new P4JServerException(e));
 		}
 	}
 
@@ -327,6 +330,14 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 
 	public void setEventManager(EventManager eventManager) {
 		this.eventManager = eventManager;
+	}
+
+	public Consumer<P4JServerException> getExceptionConsumer() {
+		return exceptionConsumer;
+	}
+
+	public void setExceptionConsumer(Consumer<P4JServerException> exceptionConsumer) {
+		this.exceptionConsumer = exceptionConsumer;
 	}
 
 	@Override

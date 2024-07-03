@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.function.Consumer;
 
 import javax.net.SocketFactory;
 
@@ -25,6 +26,7 @@ import lu.pcy113.p4j.events.ClientConnectedEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.events.P4JEvent;
 import lu.pcy113.p4j.events.S2CReadPacketEvent;
+import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -57,6 +59,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	private OutputStream outputStream;
 
 	private ClientServer clientServer;
+
+	private Consumer<P4JClientException> exceptionConsumer = P4JClientException::printStackTrace;
 
 	/**
 	 * 
@@ -190,22 +194,18 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			read_handleRawPacket(id, content);
 		} catch (NotYetConnectedException e) {
-			handleException("read", e);
+			handleException(new P4JClientException(e));
 		} catch (ClosedByInterruptException e) {
 			Thread.interrupted(); // clear interrupt flag
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException e) {
-			// ignore
+			// ignore because triggered in #close()
 		} catch (SocketException e) {
-			if (clientStatus.equals(ClientStatus.LISTENING)) {
-				handleException("read", e);
-			}
+			handleException(new P4JClientException(e));
 		} catch (SocketTimeoutException e) {
 			// ignore, just return
 		} catch (IOException e) {
-			if (clientStatus.equals(ClientStatus.LISTENING)) {
-				handleException("read", e);
-			}
+			handleException(new P4JClientException(e));
 		}
 	}
 
@@ -218,11 +218,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 
 			packet.clientRead(this, obj);
-			
+
 			dispatchEvent(new S2CReadPacketEvent(this, packet, packets.getClass(id)));
 		} catch (Exception e) {
 			dispatchEvent(new S2CReadPacketEvent(this, id, e));
-			handleException("read_handleRawPacket", e);
+			handleException(new P4JClientException(e));
 		}
 	}
 
@@ -256,7 +256,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			return false;
 		} catch (Exception e) {
 			dispatchEvent(new C2SWritePacketEvent(this, packet, e));
-			handleException("write", e);
+			handleException(new P4JClientException(e));
 			return false;
 		}
 	}
@@ -272,7 +272,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		close();
 		dispatchEvent(new ClosedSocketEvent(this));
 	}
-	
+
 	/**
 	 * Closes the client socket.<br>
 	 * The client' socket will be closed and the port will be released.<br>
@@ -298,21 +298,15 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			clientSocket = null;
 			clientServer = null;
-		} catch (IOException e) {
-			handleException("close", e);
+		} catch (Exception e) {
+			handleException(new P4JClientException(e));
 		}
 	}
 
-	/**
-	 * Handles the given exception in this server instance.<br>
-	 * It is strongly encouraged to override this method.
-	 * 
-	 * @param String    the message (the context) ("read", "read_handleRawPacket", "write", "close")
-	 * @param Exception the exception
-	 */
-	protected void handleException(String msg, Exception e) {
-		System.err.println(getClass().getName() + "/" + localInetSocketAddress + "> " + msg + " ::");
-		e.printStackTrace(System.err);
+	private void handleException(P4JClientException e) {
+		if (exceptionConsumer != null) {
+			exceptionConsumer.accept(e);
+		}
 		close();
 	}
 
@@ -323,7 +317,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	public void dispatchEvent(P4JEvent event) {
 		if (eventManager == null)
 			return;
-		
+
 		eventManager.dispatch(event, this);
 	}
 
@@ -384,6 +378,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public void setEventManager(EventManager eventManager) {
 		this.eventManager = eventManager;
+	}
+
+	public Consumer<P4JClientException> getExceptionConsumer() {
+		return exceptionConsumer;
+	}
+
+	public void setExceptionConsumer(Consumer<P4JClientException> exceptionConsumer) {
+		this.exceptionConsumer = exceptionConsumer;
 	}
 
 }

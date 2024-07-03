@@ -8,15 +8,17 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 import lu.pcy113.p4j.events.C2SReadPacketEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.events.S2CWritePacketEvent;
+import lu.pcy113.p4j.exceptions.P4JClientException;
+import lu.pcy113.p4j.exceptions.P4JServerClientException;
 import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
-import lu.pcy113.p4j.socket.client.P4JClientException;
 
 /**
  * Represents a P4JServer's client. This is a wrapper around a {@link SocketChannel} that represents a client connected to the server, on the server-side.
@@ -29,6 +31,8 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	private P4JServer server;
 
 	private SocketChannel socketChannel;
+
+	private Consumer<P4JServerClientException> exceptionConsumer = P4JServerClientException::printStackTrace;
 
 	public ServerClient(SocketChannel sc, P4JServer server) {
 		this.socketChannel = sc;
@@ -72,7 +76,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			server.dispatchEvent(new ClosedSocketEvent(e, this));
 			close();
 		} catch (IOException e) {
-			handleException("read", e);
+			handleException(new P4JServerClientException(e));
 		}
 	}
 
@@ -85,13 +89,14 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 
 			packet.serverRead(this, obj);
-			
+
 			server.dispatchEvent(new C2SReadPacketEvent(this, packet, server.getPackets().getClass(id)));
 		} catch (UnknownPacketException e) {
 			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
+			handleException(new P4JServerClientException(e));
 		} catch (Exception e) {
 			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
-			handleException("read_handleRawPacket", e);
+			handleException(new P4JServerClientException(e));
 		}
 	}
 
@@ -103,14 +108,14 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 */
 	public synchronized boolean write(S2CPacket packet) {
 		Objects.requireNonNull(packet);
-		
+
 		try {
 			ByteBuffer content = server.getCodec().encode(packet.serverWrite(this));
 			content = server.getEncryption().encrypt(content);
 			content = server.getCompression().compress(content);
 
 			final int id = server.getPackets().getId(packet.getClass());
-			
+
 			final ByteBuffer bb = ByteBuffer.allocateDirect(4 + 4 + content.capacity());
 			bb.putInt(content.limit() + 4); // Add id length
 			bb.putInt(id);
@@ -124,11 +129,10 @@ public class ServerClient implements P4JClientInstance, Closeable {
 		} catch (ClosedChannelException e) {
 			server.dispatchEvent(new ClosedSocketEvent(e, this));
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
-			handleException("write", e);
 			return false;
 		} catch (Exception e) {
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
-			handleException("write", e);
+			handleException(new P4JServerClientException(e));
 			return false;
 		}
 	}
@@ -137,12 +141,12 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * Handles the given exception in this client instance.<br>
 	 * It is strongly encouraged to override this method.
 	 * 
-	 * @param String    the message (the context) ("read", "read_handleRawPacket", "write", "close")
 	 * @param Exception the exception
 	 */
-	protected void handleException(String msg, Exception e) {
-		System.err.println(getClass().getName() + "/" + uuid + "> " + msg + " ::");
-		e.printStackTrace(System.err);
+	private void handleException(P4JServerClientException e) {
+		if (exceptionConsumer != null) {
+			exceptionConsumer.accept(e);
+		}
 	}
 
 	/**
@@ -156,7 +160,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 		close();
 		server.dispatchEvent(new ClosedSocketEvent(this));
 	}
-	
+
 	/**
 	 * Closes the client socket.<br>
 	 * Doesn't dispatch a {@link ClosedSocketEvent}.
@@ -173,10 +177,10 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			serverClientStatus = ServerClientStatus.CLOSING;
 			socketChannel.close();
 			serverClientStatus = ServerClientStatus.CLOSED;
-			
+
 			server.getClientManager().remove(this);
-		} catch (IOException e) {
-			handleException("close", e);
+		} catch (Exception e) {
+			handleException(new P4JServerClientException(e));
 		}
 	}
 
@@ -190,6 +194,18 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 	public UUID getUUID() {
 		return uuid;
+	}
+
+	public ServerClientStatus getServerClientStatus() {
+		return serverClientStatus;
+	}
+
+	public Consumer<P4JServerClientException> getExceptionConsumer() {
+		return exceptionConsumer;
+	}
+
+	public void setExceptionConsumer(Consumer<P4JServerClientException> exceptionConsumer) {
+		this.exceptionConsumer = exceptionConsumer;
 	}
 
 	@Override
