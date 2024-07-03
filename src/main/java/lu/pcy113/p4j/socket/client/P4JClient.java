@@ -201,11 +201,15 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		} catch (ClosedChannelException e) {
 			// ignore because triggered in #close()
 		} catch (SocketException e) {
-			handleException(new P4JClientException(e));
+			if (clientStatus.equals(ClientStatus.LISTENING)) {
+				handleException(new P4JClientException(e));
+			}
 		} catch (SocketTimeoutException e) {
 			// ignore, just return
 		} catch (IOException e) {
-			handleException(new P4JClientException(e));
+			if (clientStatus.equals(ClientStatus.LISTENING)) {
+				handleException(new P4JClientException(e));
+			}
 		}
 	}
 
