@@ -2,6 +2,7 @@ package lu.pcy113.p4j.socket.server;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.net.SocketException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -72,7 +73,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			content.clear();
 		} catch (ClosedByInterruptException e) {
 			// ignore because triggered in #close()
-		} catch (ClosedChannelException e) {
+		} catch (ClosedChannelException | SocketException e) {
 			server.dispatchEvent(new ClosedSocketEvent(e, this));
 			close();
 		} catch (IOException e) {

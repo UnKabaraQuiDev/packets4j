@@ -6,10 +6,10 @@ import lu.pcy113.p4j.socket.P4JClientInstance;
 
 public class ClosedSocketEvent implements P4JEvent {
 
-	private ClosedChannelException exception;
+	private Exception exception;
 	private P4JClientInstance client;
 
-	public ClosedSocketEvent(ClosedChannelException e, P4JClientInstance op) {
+	public ClosedSocketEvent(Exception e, P4JClientInstance op) {
 		this.exception = e;
 		this.client = op;
 	}
@@ -22,7 +22,7 @@ public class ClosedSocketEvent implements P4JEvent {
 		return exception != null;
 	}
 
-	public ClosedChannelException getException() {
+	public Exception getException() {
 		return exception;
 	}
 

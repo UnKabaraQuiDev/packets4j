@@ -186,7 +186,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	}
 
 	/**
-	 * Iterates over all the connected clients and sends the , if the supplier's condition is met.
+	 * Iterates over all the connected clients and sends the packet provided by the supplier, if the predicate's condition is met.
 	 * 
 	 * @param S2CPacket the packet to send
 	 */
