@@ -9,6 +9,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Consumer;
@@ -181,6 +182,22 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		for (ServerClient sc : clientManager.getAllClients()) {
 			if (condition.test(sc)) {
 				sc.write(packet);
+			}
+		}
+	}
+
+	public void broadcastIf(List<S2CPacket<?>> packets, Predicate<ServerClient> condition) {
+		Objects.requireNonNull(packets);
+
+		if (packets.isEmpty()) {
+			return;
+		}
+
+		for (ServerClient sc : clientManager.getAllClients()) {
+			if (condition.test(sc)) {
+				for (S2CPacket<?> packet : packets) {
+					sc.write(packet);
+				}
 			}
 		}
 	}
