@@ -70,7 +70,7 @@ public class ClientManager {
 	 * 
 	 * @param ServerClient the new {@link ServerClient}
 	 */
-	public void registerClient(ServerClient sclient) {
+	protected void registerClient(ServerClient sclient) {
 		clients.put(sclient.getSocketChannel(), sclient);
 	}
 
