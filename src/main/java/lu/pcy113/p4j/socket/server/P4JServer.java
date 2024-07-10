@@ -26,6 +26,7 @@ import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance;
 import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.pclib.PCUtils;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
@@ -33,6 +34,8 @@ import lu.pcy113.pclib.logger.GlobalLogger;
 
 public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher {
 
+	public static int MAX_PACKET_SIZE = 2048;
+	
 	private ServerStatus serverStatus = ServerStatus.PRE;
 
 	private EventManager eventManager = new SyncEventManager();
@@ -62,6 +65,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		this.encryption = em;
 		this.compression = com;
 		this.clientManager = new ClientManager(this);
+		
+		MAX_PACKET_SIZE = PCUtils.toInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
 	/*

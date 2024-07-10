@@ -28,6 +28,7 @@ import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.events.P4JEvent;
 import lu.pcy113.p4j.events.S2CReadPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
+import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -45,6 +46,8 @@ import lu.pcy113.pclib.logger.GlobalLogger;
  * @author pcy113
  */
 public class P4JClient extends Thread implements P4JInstance, P4JClientInstance, EventDispatcher, Closeable {
+
+	public static int MAX_PACKET_SIZE = 2048;
 
 	private ClientStatus clientStatus = ClientStatus.PRE;
 
@@ -75,6 +78,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		this.codec = cm;
 		this.encryption = em;
 		this.compression = com;
+
+		MAX_PACKET_SIZE = PCUtils.toInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
 	/**
@@ -187,6 +192,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			final int length = PCUtils.byteToInt(bb);
 
+			if (length > MAX_PACKET_SIZE) {
+				handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(length)));
+				return;
+			}
+
 			final byte[] cc = new byte[length];
 			if (inputStream.read(cc) != length) {
 				return;
@@ -209,6 +219,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			}
 		} catch (SocketTimeoutException e) {
 			// ignore, just return
+		} catch (OutOfMemoryError e) {
+			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
 		} catch (IOException e) {
 			if (clientStatus.equals(ClientStatus.LISTENING)) {
 				handleException(new P4JClientException(e));
@@ -240,6 +252,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			content = encryption.encrypt(content);
 			content = compression.compress(content);
 
+			if (content.remaining() + 3 * 4 > MAX_PACKET_SIZE) {
+				handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(content.remaining() + 3 * 4)));
+				return false;
+			}
+
 			ByteBuffer bb = ByteBuffer.allocate(4 + 4 + content.capacity());
 			bb.putInt(content.limit() + 4); // Add id length
 			bb.putInt(packets.getId(packet.getClass()));
@@ -260,6 +277,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		} catch (ClosedChannelException e) {
 			dispatchEvent(new ClosedSocketEvent(e, this));
 			close();
+			return false;
+		} catch (OutOfMemoryError e) {
+			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
 			return false;
 		} catch (Exception e) {
 			dispatchEvent(new C2SWritePacketEvent(this, packet, e));

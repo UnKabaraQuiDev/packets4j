@@ -16,6 +16,7 @@ import lu.pcy113.p4j.events.C2SReadPacketEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
 import lu.pcy113.p4j.events.S2CWritePacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
+import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.exceptions.P4JServerClientException;
 import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
@@ -48,7 +49,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 	public synchronized void read() {
 		try {
-			final ByteBuffer bb = ByteBuffer.allocateDirect(4);
+			final ByteBuffer bb = ByteBuffer.allocate(4);
 			final int bytesRead = socketChannel.read(bb);
 			if (bytesRead == -1) {
 				server.dispatchEvent(new ClosedSocketEvent(this));
@@ -63,7 +64,12 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			final int length = bb.getInt();
 			bb.clear();
 
-			final ByteBuffer content = ByteBuffer.allocateDirect(length);
+			if (length > P4JServer.MAX_PACKET_SIZE) {
+				handleException(new P4JServerClientException(new P4JMaxPacketSizeExceeded(length)));
+				return;
+			}
+
+			final ByteBuffer content = ByteBuffer.allocate(length);
 			if (socketChannel.read(content) != length)
 				return;
 
@@ -78,7 +84,9 @@ public class ServerClient implements P4JClientInstance, Closeable {
 		} catch (ClosedChannelException | SocketException e) {
 			server.dispatchEvent(new ClosedSocketEvent(e, this));
 			close();
-		} catch (IOException e) {
+		} catch (OutOfMemoryError e) {
+			handleException(new P4JServerClientException(e));
+		} catch (Exception e) {
 			handleException(new P4JServerClientException(e));
 		}
 	}
@@ -119,7 +127,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 			final int id = server.getPackets().getId(packet.getClass());
 
-			final ByteBuffer bb = ByteBuffer.allocateDirect(4 + 4 + content.capacity());
+			final ByteBuffer bb = ByteBuffer.allocate(4 + 4 + content.capacity());
 			bb.putInt(content.limit() + 4); // Add id length
 			bb.putInt(id);
 			bb.put(content);
