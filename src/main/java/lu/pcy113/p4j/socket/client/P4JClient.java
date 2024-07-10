@@ -15,7 +15,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.function.Consumer;
-import java.util.logging.Level;
 
 import javax.net.SocketFactory;
 
@@ -38,7 +37,6 @@ import lu.pcy113.pclib.PCUtils;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
-import lu.pcy113.pclib.logger.GlobalLogger;
 
 /**
  * This class represents the client-side Client connecting to the server.
@@ -66,7 +64,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	private ClientServer clientServer;
 
-	private Consumer<P4JClientException> exceptionConsumer = (P4JClientException e) -> GlobalLogger.log(Level.WARNING, e.getMessage());
+	private Consumer<P4JClientException> exceptionConsumer = (P4JClientException e) -> System.err.println(e.getMessage());
 
 	/**
 	 * 

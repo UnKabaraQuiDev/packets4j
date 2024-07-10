@@ -15,7 +15,6 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
-import java.util.logging.Level;
 
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
@@ -30,12 +29,11 @@ import lu.pcy113.pclib.PCUtils;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
-import lu.pcy113.pclib.logger.GlobalLogger;
 
 public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher {
 
 	public static int MAX_PACKET_SIZE = 2048;
-	
+
 	private ServerStatus serverStatus = ServerStatus.PRE;
 
 	private EventManager eventManager = new SyncEventManager();
@@ -51,7 +49,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
 
-	private Consumer<P4JServerException> exceptionConsumer = (P4JServerException e) -> GlobalLogger.log(Level.WARNING, e.getMessage());
+	private Consumer<P4JServerException> exceptionConsumer = (P4JServerException e) -> System.err.println(e.getMessage());
 
 	/**
 	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
@@ -65,7 +63,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		this.encryption = em;
 		this.compression = com;
 		this.clientManager = new ClientManager(this);
-		
+
 		MAX_PACKET_SIZE = PCUtils.toInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
