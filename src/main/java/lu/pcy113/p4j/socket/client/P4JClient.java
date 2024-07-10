@@ -96,7 +96,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
 	public void bind(int port) throws IOException {
-		bind(new InetSocketAddress(InetAddress.getLocalHost(), port));
+		bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
 	}
 
 	/**
