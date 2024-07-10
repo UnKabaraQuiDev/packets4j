@@ -53,6 +53,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	private CompressionManager compression;
 	private PacketManager packets = new PacketManager(this);
 
+	private int connectionTimeout = 5000;
 	private InetSocketAddress localInetSocketAddress;
 	private Socket clientSocket;
 	private InputStream inputStream;
@@ -120,7 +121,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			throw new P4JClientException("Client not bound");
 		}
 		try {
-			clientSocket.connect(new InetSocketAddress(remote, port), 5_000);
+			clientSocket.connect(new InetSocketAddress(remote, port), connectionTimeout);
 			clientSocket.setSoTimeout(200); // ms
 			this.inputStream = clientSocket.getInputStream();
 			this.outputStream = clientSocket.getOutputStream();
@@ -390,6 +391,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public void setExceptionConsumer(Consumer<P4JClientException> exceptionConsumer) {
 		this.exceptionConsumer = exceptionConsumer;
+	}
+
+	public void setConnectionTimeout(int connectionTimeout) {
+		this.connectionTimeout = connectionTimeout;
+	}
+
+	public int getConnectionTimeout() {
+		return connectionTimeout;
 	}
 
 }
