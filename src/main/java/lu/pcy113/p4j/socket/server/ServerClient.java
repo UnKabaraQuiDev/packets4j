@@ -10,6 +10,7 @@ import java.nio.channels.SocketChannel;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
+import java.util.logging.Level;
 
 import lu.pcy113.p4j.events.C2SReadPacketEvent;
 import lu.pcy113.p4j.events.ClosedSocketEvent;
@@ -20,6 +21,7 @@ import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
+import lu.pcy113.pclib.logger.GlobalLogger;
 
 /**
  * Represents a P4JServer's client. This is a wrapper around a {@link SocketChannel} that represents a client connected to the server, on the server-side.
@@ -33,7 +35,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 	private SocketChannel socketChannel;
 
-	private Consumer<P4JServerClientException> exceptionConsumer = P4JServerClientException::printStackTrace;
+	private Consumer<P4JServerClientException> exceptionConsumer = (P4JServerClientException e) -> GlobalLogger.log(Level.WARNING, e.getMessage());
 
 	public ServerClient(SocketChannel sc, P4JServer server) {
 		this.socketChannel = sc;

@@ -15,6 +15,7 @@ import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.logging.Level;
 
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
@@ -28,6 +29,7 @@ import lu.pcy113.p4j.socket.P4JServerInstance;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
+import lu.pcy113.pclib.logger.GlobalLogger;
 
 public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher {
 
@@ -46,7 +48,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
 
-	private Consumer<P4JServerException> exceptionConsumer = P4JServerException::printStackTrace;
+	private Consumer<P4JServerException> exceptionConsumer = (P4JServerException e) -> GlobalLogger.log(Level.WARNING, e.getMessage());
 
 	/**
 	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
