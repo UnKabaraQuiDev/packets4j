@@ -77,7 +77,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		this.encryption = em;
 		this.compression = com;
 
-		MAX_PACKET_SIZE = PCUtils.toInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
+		MAX_PACKET_SIZE = PCUtils.parseInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
 	/**

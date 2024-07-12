@@ -6,7 +6,7 @@
 
 	<groupId>lu.pcy113</groupId>
 	<artifactId>packets4j</artifactId>
-	<version>pre-release_0.7</version>
+	<version>0.8</version>
 	<packaging>jar</packaging>
 
 	<name>Packets4J</name>
@@ -24,13 +24,14 @@
 		<dependency>
 			<groupId>lu.pcy113</groupId>
 			<artifactId>PCLib</artifactId>
-			<version>0.7</version>
+			<version>0.8</version>
 		</dependency>
 		<dependency>
 			<groupId>lu.pcy113</groupId>
 			<artifactId>jbcodec</artifactId>
-			<version>2.2</version>
+			<version>2.3</version>
 		</dependency>
+
 		<dependency>
 			<groupId>junit</groupId>
 			<artifactId>junit</artifactId>

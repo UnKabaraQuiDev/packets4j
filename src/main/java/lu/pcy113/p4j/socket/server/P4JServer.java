@@ -64,7 +64,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		this.compression = com;
 		this.clientManager = new ClientManager(this);
 
-		MAX_PACKET_SIZE = PCUtils.toInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
+		MAX_PACKET_SIZE = PCUtils.parseInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
 	/*
@@ -154,8 +154,6 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 
 	/**
 	 * Sends the packet to all the connected clients.
-	 * 
-	 * @param S2CPacket the packet to send
 	 */
 	public void broadcast(S2CPacket<?> packet) {
 		Objects.requireNonNull(packet);
@@ -166,9 +164,24 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	}
 
 	/**
+	 * Sends the packet to all the connected clients.
+	 */
+	public void broadcast(List<S2CPacket<?>> packets) {
+		Objects.requireNonNull(packets);
+
+		if (packets.isEmpty()) {
+			return;
+		}
+
+		for (ServerClient sc : clientManager.getAllClients()) {
+			for (S2CPacket<?> packet : packets) {
+				sc.write(packet);
+			}
+		}
+	}
+
+	/**
 	 * Sends the packet provided by the supplier to all the connected clients.
-	 * 
-	 * @param S2CPacket the packet to send
 	 */
 	public void broadcast(Function<ServerClient, S2CPacket<?>> packetSupplier) {
 		for (ServerClient sc : clientManager.getAllClients()) {
@@ -178,8 +191,6 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 
 	/**
 	 * Iterates over all the connected clients and sends the specified packet if the predicate's condition is met.
-	 * 
-	 * @param S2CPacket the packet to send
 	 */
 	public void broadcastIf(S2CPacket<?> packet, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packet);
@@ -191,6 +202,9 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 		}
 	}
 
+	/**
+	 * Iterates over all the connected clients and sends the specified packet(s) if the predicate's condition is met.
+	 */
 	public void broadcastIf(List<S2CPacket<?>> packets, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packets);
 
@@ -209,8 +223,6 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 
 	/**
 	 * Iterates over all the connected clients and sends the packet provided by the supplier, if the predicate's condition is met.
-	 * 
-	 * @param S2CPacket the packet to send
 	 */
 	public void broadcastIf(Function<ServerClient, S2CPacket<?>> packetSupplier, Predicate<ServerClient> condition) {
 		for (ServerClient sc : clientManager.getAllClients()) {
