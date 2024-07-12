@@ -1,5 +1,6 @@
 package lu.pcy113.p4j.socket.server;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.ClosedByInterruptException;
@@ -30,7 +31,7 @@ import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
 
-public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher {
+public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher, Closeable {
 
 	public static int MAX_PACKET_SIZE = 2048;
 
@@ -78,7 +79,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	 * @throws IOException        if the {@link ServerSocketChannel} or {@link Selector} cannot be opened or bound
 	 * @throws P4JServerException if the server is already bound
 	 */
-	public void bind(InetSocketAddress isa) throws IOException {
+	public synchronized void bind(InetSocketAddress isa) throws IOException {
 		if (!serverStatus.equals(ServerStatus.PRE)) {
 			throw new P4JServerException("Server already bound");
 		}
@@ -155,7 +156,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Sends the packet to all the connected clients.
 	 */
-	public void broadcast(S2CPacket<?> packet) {
+	public synchronized void broadcast(S2CPacket<?> packet) {
 		Objects.requireNonNull(packet);
 
 		for (ServerClient sc : clientManager.getAllClients()) {
@@ -166,7 +167,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Sends the packet to all the connected clients.
 	 */
-	public void broadcast(List<S2CPacket<?>> packets) {
+	public synchronized void broadcast(List<S2CPacket<?>> packets) {
 		Objects.requireNonNull(packets);
 
 		if (packets.isEmpty()) {
@@ -183,7 +184,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Sends the packet provided by the supplier to all the connected clients.
 	 */
-	public void broadcast(Function<ServerClient, S2CPacket<?>> packetSupplier) {
+	public synchronized void broadcast(Function<ServerClient, S2CPacket<?>> packetSupplier) {
 		for (ServerClient sc : clientManager.getAllClients()) {
 			sc.write(packetSupplier.apply(sc));
 		}
@@ -192,7 +193,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Iterates over all the connected clients and sends the specified packet if the predicate's condition is met.
 	 */
-	public void broadcastIf(S2CPacket<?> packet, Predicate<ServerClient> condition) {
+	public synchronized void broadcastIf(S2CPacket<?> packet, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packet);
 
 		for (ServerClient sc : clientManager.getAllClients()) {
@@ -205,7 +206,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Iterates over all the connected clients and sends the specified packet(s) if the predicate's condition is met.
 	 */
-	public void broadcastIf(List<S2CPacket<?>> packets, Predicate<ServerClient> condition) {
+	public synchronized void broadcastIf(List<S2CPacket<?>> packets, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packets);
 
 		if (packets.isEmpty()) {
@@ -224,7 +225,7 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	/**
 	 * Iterates over all the connected clients and sends the packet provided by the supplier, if the predicate's condition is met.
 	 */
-	public void broadcastIf(Function<ServerClient, S2CPacket<?>> packetSupplier, Predicate<ServerClient> condition) {
+	public synchronized void broadcastIf(Function<ServerClient, S2CPacket<?>> packetSupplier, Predicate<ServerClient> condition) {
 		for (ServerClient sc : clientManager.getAllClients()) {
 			if (condition.test(sc)) {
 				sc.write(packetSupplier.apply(sc));
@@ -261,7 +262,8 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	 * 
 	 * @throws P4JServerException if the server socket is already closed
 	 */
-	public void close() {
+	@Override
+	public synchronized void close() {
 		if (serverStatus.equals(ServerStatus.CLOSED) || serverStatus.equals(ServerStatus.PRE))
 			throw new P4JServerException("Cannot close not started server socket.");
 

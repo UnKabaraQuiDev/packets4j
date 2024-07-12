@@ -44,31 +44,35 @@ public class ServerClient implements P4JClientInstance, Closeable {
 		this.serverClientStatus = ServerClientStatus.LISTENING;
 	}
 
-	public synchronized void read() {
+	public void read() {
 		try {
-			final ByteBuffer bb = ByteBuffer.allocate(4);
-			final int bytesRead = socketChannel.read(bb);
-			if (bytesRead == -1) {
-				server.dispatchEvent(new ClosedSocketEvent(this));
-				close();
-				return;
+			ByteBuffer content;
+
+			synchronized (socketChannel) {
+				final ByteBuffer bb = ByteBuffer.allocate(4);
+				final int bytesRead = socketChannel.read(bb);
+				if (bytesRead == -1) {
+					server.dispatchEvent(new ClosedSocketEvent(this));
+					close();
+					return;
+				}
+
+				if (bytesRead != 4)
+					return;
+
+				bb.flip();
+				final int length = bb.getInt();
+				bb.clear();
+
+				if (length > P4JServer.MAX_PACKET_SIZE) {
+					handleException(new P4JServerClientException(new P4JMaxPacketSizeExceeded(length)));
+					return;
+				}
+
+				content = ByteBuffer.allocate(length);
+				if (socketChannel.read(content) != length)
+					return;
 			}
-
-			if (bytesRead != 4)
-				return;
-
-			bb.flip();
-			final int length = bb.getInt();
-			bb.clear();
-
-			if (length > P4JServer.MAX_PACKET_SIZE) {
-				handleException(new P4JServerClientException(new P4JMaxPacketSizeExceeded(length)));
-				return;
-			}
-
-			final ByteBuffer content = ByteBuffer.allocate(length);
-			if (socketChannel.read(content) != length)
-				return;
 
 			content.flip();
 			final int id = content.getInt();
@@ -114,7 +118,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * @param S2CPacket the packet to write to the client
 	 * @return If the packet was written successfully
 	 */
-	public synchronized boolean write(S2CPacket packet) {
+	public boolean write(S2CPacket packet) {
 		Objects.requireNonNull(packet);
 
 		try {
@@ -130,7 +134,9 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			bb.put(content);
 			bb.flip();
 
-			final int length = socketChannel.write(bb);
+			synchronized (socketChannel) {
+				final int length = socketChannel.write(bb);
+			}
 
 			server.dispatchEvent(new S2CWritePacketEvent(this, packet, id));
 			return true;
@@ -164,7 +170,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * @see #close()
 	 * @throws P4JClientException if the client socket is already closed or isn't started
 	 */
-	public void disconnect() {
+	public synchronized void disconnect() {
 		close();
 		server.dispatchEvent(new ClosedSocketEvent(this));
 	}
@@ -177,7 +183,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * @throws P4JClientException if the client socket is already closed or isn't started
 	 */
 	@Override
-	public void close() {
+	public synchronized void close() {
 		if (serverClientStatus.equals(ServerClientStatus.CLOSED) || serverClientStatus.equals(ServerClientStatus.PRE))
 			throw new P4JClientException("Cannot close unstarted client socket.");
 

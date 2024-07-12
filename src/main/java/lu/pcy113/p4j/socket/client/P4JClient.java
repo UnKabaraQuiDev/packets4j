@@ -85,7 +85,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * 
 	 * @throws IOException
 	 */
-	public void bind() throws IOException {
+	public synchronized void bind() throws IOException {
 		bind(0);
 	}
 
@@ -95,7 +95,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @param int the port to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
-	public void bind(int port) throws IOException {
+	public synchronized void bind(int port) throws IOException {
 		bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
 	}
 
@@ -105,7 +105,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @param InetSocketAddress the local address to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
-	public void bind(InetSocketAddress isa) throws IOException {
+	public synchronized void bind(InetSocketAddress isa) throws IOException {
 		clientSocket = SocketFactory.getDefault().createSocket();
 		clientSocket.bind(isa);
 		clientStatus = ClientStatus.BOUND;
@@ -121,7 +121,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @param port   the remote port
 	 * @throws IOException if the {@link Socket} cannot be connected
 	 */
-	public void connect(InetAddress remote, int port) throws IOException {
+	public synchronized void connect(InetAddress remote, int port) throws IOException {
 		if (!clientStatus.equals(ClientStatus.BOUND)) {
 			throw new P4JClientException("Client not bound");
 		}
@@ -163,7 +163,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * 
 	 * @see {@link #connect(InetAddress, int)}
 	 */
-	public void connect(InetSocketAddress isa) throws IOException {
+	public synchronized void connect(InetSocketAddress isa) throws IOException {
 		this.connect(isa.getAddress(), isa.getPort());
 	}
 
@@ -177,27 +177,31 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public void read() {
 		try {
-			final byte[] bb = new byte[4];
-			final int bytesRead = inputStream.read(bb);
-			if (bytesRead == -1) {
-				dispatchEvent(new ClosedSocketEvent(this));
-				close();
-				return;
-			}
-			if (bytesRead != 4) {
-				return;
-			}
+			final byte[] cc;
 
-			final int length = PCUtils.byteToInt(bb);
+			synchronized (inputStream) {
+				final byte[] bb = new byte[4];
+				final int bytesRead = inputStream.read(bb);
+				if (bytesRead == -1) {
+					dispatchEvent(new ClosedSocketEvent(this));
+					close();
+					return;
+				}
+				if (bytesRead != 4) {
+					return;
+				}
 
-			if (length > MAX_PACKET_SIZE) {
-				handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(length)));
-				return;
-			}
+				final int length = PCUtils.byteToInt(bb);
 
-			final byte[] cc = new byte[length];
-			if (inputStream.read(cc) != length) {
-				return;
+				if (length > MAX_PACKET_SIZE) {
+					handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(length)));
+					return;
+				}
+
+				cc = new byte[length];
+				if (inputStream.read(cc) != length) {
+					return;
+				}
 			}
 
 			final ByteBuffer content = ByteBuffer.wrap(cc);
@@ -243,7 +247,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 		}
 	}
 
-	public synchronized boolean write(C2SPacket packet) {
+	public boolean write(C2SPacket packet) {
 		try {
 			Object obj = packet.clientWrite(this);
 			ByteBuffer content = codec.encode(obj);
@@ -261,13 +265,15 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			bb.put(content);
 			bb.flip();
 
-			if (bb.hasArray()) {
-				outputStream.write(bb.array());
-			} else {
-				outputStream.write(PCUtils.byteBufferToArray(bb));
-			}
+			synchronized (outputStream) {
+				if (bb.hasArray()) {
+					outputStream.write(bb.array());
+				} else {
+					outputStream.write(PCUtils.byteBufferToArray(bb));
+				}
 
-			outputStream.flush();
+				outputStream.flush();
+			}
 
 			dispatchEvent(new C2SWritePacketEvent(this, packet));
 
@@ -290,10 +296,10 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * Disconnects & closes the client socket<br>
 	 * And dispatches a {@link ClosedSocketEvent}.
 	 * 
-	 * @see #close()
+	 * @see {@link #close()}
 	 * @throws P4JClientException if the client isn't started
 	 */
-	public void disconnect() {
+	public synchronized void disconnect() {
 		close();
 		dispatchEvent(new ClosedSocketEvent(this));
 	}
@@ -307,7 +313,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @throws P4JClientException if the client isn't started
 	 */
 	@Override
-	public void close() {
+	public synchronized void close() {
 		if (!clientStatus.equals(ClientStatus.LISTENING)) {
 			clientStatus = ClientStatus.CLOSED;
 			return;
