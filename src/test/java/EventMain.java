@@ -4,6 +4,8 @@ import java.net.InetSocketAddress;
 import org.junit.Test;
 
 import lu.pcy113.jbcodec.CodecManager;
+import lu.pcy113.jbcodec.decoder.PairDecoder;
+import lu.pcy113.jbcodec.encoder.PairEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.ClientConnectedEvent;
@@ -45,7 +47,8 @@ public class EventMain {
 			}
 
 			P4JServer server = new P4JServer(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
-			server.bind(new InetSocketAddress(8361));
+			server.getCodec().register(new PairEncoder(), new PairDecoder(), (short) 22);
+			server.bind(new InetSocketAddress(12_000));
 			server.getPackets().register(PingPongPacket.class, 1);
 			server.getEventManager().register(new ServerEventListener("server"));
 			server.setAccepting();
@@ -53,6 +56,7 @@ public class EventMain {
 			GlobalLogger.info("server done");
 
 			P4JClient client = new P4JClient(CodecManager.base(), EncryptionManager.raw(), CompressionManager.raw());
+			client.getCodec().register(new PairEncoder(), new PairDecoder(), (short) 22);
 			client.bind();
 			client.getPackets().register(PingPongPacket.class, 1);
 			client.getEventManager().register(new ServerEventListener("client"));
@@ -75,7 +79,7 @@ public class EventMain {
 			GlobalLogger.info("server disconnected all clients");
 			server.close();
 			GlobalLogger.info("server closed waiting for thread to end");
-			client.join();
+			client.close();
 			GlobalLogger.info("server thread ended");
 		} catch (Exception e) {
 			e.printStackTrace();
