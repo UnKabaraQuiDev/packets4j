@@ -9,7 +9,7 @@ import lu.pcy113.jbcodec.encoder.PairEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.ClosedSocketEvent;
+import lu.pcy113.p4j.events.ClientDisconnectedEvent;
 import lu.pcy113.p4j.socket.client.P4JClient;
 import lu.pcy113.p4j.socket.server.P4JServer;
 import lu.pcy113.pclib.listener.EventDispatcher;
@@ -34,7 +34,7 @@ public class EventMain {
 		}
 
 		@EventHandler
-		public void onClosed(ClosedSocketEvent evt, EventManager em, EventDispatcher dispatcher) {
+		public void onClosed(ClientDisconnectedEvent evt, EventManager em, EventDispatcher dispatcher) {
 			GlobalLogger.log(target + " socket closed: " + evt.getClient() + " from: " + dispatcher);
 		}
 	}

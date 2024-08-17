@@ -23,7 +23,7 @@ import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.C2SWritePacketEvent;
 import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.ClosedSocketEvent;
+import lu.pcy113.p4j.events.ClientDisconnectedEvent;
 import lu.pcy113.p4j.events.P4JEvent;
 import lu.pcy113.p4j.events.S2CReadPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
@@ -57,7 +57,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	private PacketManager packets = new PacketManager(this);
 
 	private int connectionTimeout = 5000;
-	private InetSocketAddress localInetSocketAddress;
+	private InetSocketAddress localInetSocketAddress, remoteInetSocketAddress;
 	private Socket clientSocket;
 	private InputStream inputStream;
 	private OutputStream outputStream;
@@ -133,7 +133,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			clientStatus = ClientStatus.LISTENING;
 
-			clientServer = new ClientServer(new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getPort()));
+			remoteInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getPort());
+			
+			clientServer = new ClientServer(remoteInetSocketAddress);
 
 			if (!super.isAlive()) {
 				super.start();
@@ -183,7 +185,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 				final byte[] bb = new byte[4];
 				final int bytesRead = inputStream.read(bb);
 				if (bytesRead == -1) {
-					dispatchEvent(new ClosedSocketEvent(this));
+					dispatchEvent(new ClientDisconnectedEvent(this));
 					close();
 					return;
 				}
@@ -279,7 +281,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			return true;
 		} catch (ClosedChannelException e) {
-			dispatchEvent(new ClosedSocketEvent(e, this));
+			dispatchEvent(new ClientDisconnectedEvent(e, this));
 			close();
 			return false;
 		} catch (OutOfMemoryError e) {
@@ -294,20 +296,20 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	/**
 	 * Disconnects & closes the client socket<br>
-	 * And dispatches a {@link ClosedSocketEvent}.
+	 * And dispatches a {@link ClientDisconnectedEvent}.
 	 * 
 	 * @see {@link #close()}
 	 * @throws P4JClientException if the client isn't started
 	 */
 	public synchronized void disconnect() {
 		close();
-		dispatchEvent(new ClosedSocketEvent(this));
+		dispatchEvent(new ClientDisconnectedEvent(this));
 	}
 
 	/**
 	 * Closes the client socket.<br>
 	 * The client' socket will be closed and the port will be released.<br>
-	 * Doesn't dispatch a {@link ClosedSocketEvent}.
+	 * Doesn't dispatch a {@link ClientDisconnectedEvent}.
 	 * 
 	 * @see {@link #disconnect()}
 	 * @throws P4JClientException if the client isn't started
@@ -358,6 +360,10 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public InetSocketAddress getLocalInetSocketAddress() {
 		return localInetSocketAddress;
+	}
+	
+	public InetSocketAddress getRemoteInetSocketAddress() {
+		return remoteInetSocketAddress;
 	}
 
 	public ClientServer getClientServer() {

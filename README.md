@@ -184,7 +184,7 @@ Client side: P4JClient -> ClientServer
 - `S2CWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a server writes an outgoing packet to the client.
 - `C2SReadPacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a server reads an incoming packet from the client.
 - `C2SWritePacketEvent(P4JClientInstance, Packet, Class<Packet>, int, Throwable, boolean)`: When a client writes an outgoing packet to the server.
-- `ClosedSocketEvent(ClosedChannelException, P4JClientInstance)`: When a client connection gets closed.
+- `ClientDisconnectedEvent(ClosedChannelException, P4JClientInstance)`: When a client connection gets closed.
 
 
 ------

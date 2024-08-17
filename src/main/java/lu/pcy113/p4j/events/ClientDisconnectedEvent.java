@@ -4,17 +4,17 @@ import java.nio.channels.ClosedChannelException;
 
 import lu.pcy113.p4j.socket.P4JClientInstance;
 
-public class ClosedSocketEvent implements P4JEvent {
+public class ClientDisconnectedEvent implements P4JEvent {
 
 	private Exception exception;
 	private P4JClientInstance client;
 
-	public ClosedSocketEvent(Exception e, P4JClientInstance op) {
+	public ClientDisconnectedEvent(Exception e, P4JClientInstance op) {
 		this.exception = e;
 		this.client = op;
 	}
 
-	public ClosedSocketEvent(P4JClientInstance client) {
+	public ClientDisconnectedEvent(P4JClientInstance client) {
 		this.client = client;
 	}
 

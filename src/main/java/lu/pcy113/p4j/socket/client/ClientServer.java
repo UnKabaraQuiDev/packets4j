@@ -5,7 +5,7 @@ import java.net.InetSocketAddress;
 import lu.pcy113.p4j.socket.P4JServerInstance;
 
 /**
- * Represents the server information on the client-side.
+ * Represents the server on the client-side.
  */
 public class ClientServer implements P4JServerInstance {
 
@@ -21,7 +21,7 @@ public class ClientServer implements P4JServerInstance {
 
 	@Override
 	public String toString() {
-		return this.getClass().getName() + "#" + hashCode() + "@{" + remoteInetSocketAddress;
+		return this.getClass().getName() + "#" + hashCode() + "@{" + remoteInetSocketAddress + "}";
 	}
 
 }
