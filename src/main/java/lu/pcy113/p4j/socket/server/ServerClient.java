@@ -10,13 +10,16 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import lu.pcy113.p4j.events.C2SReadPacketEvent;
-import lu.pcy113.p4j.events.ClientDisconnectedEvent;
-import lu.pcy113.p4j.events.S2CWritePacketEvent;
+import lu.pcy113.p4j.events.client.ClientDisconnectedEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SPostReadPacketEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SPreReadPacketEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SReadFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CPostWritePacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CPreWritePacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CWriteFailedPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.exceptions.P4JServerClientException;
-import lu.pcy113.p4j.packets.UnknownPacketException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JClientInstance;
@@ -100,14 +103,19 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 
-			packet.serverRead(this, obj);
+			server.dispatchEvent(new C2SPreReadPacketEvent(this, packet, content));
+			
+			try {
+				packet.serverRead(this, obj);
 
-			server.dispatchEvent(new C2SReadPacketEvent(this, packet, server.getPackets().getClass(id)));
-		} catch (UnknownPacketException e) {
-			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
-			handleException(new P4JServerClientException(e));
+				server.dispatchEvent(new C2SPostReadPacketEvent(this, packet, content));
+			} catch (Exception e) {
+				server.dispatchEvent(new C2SReadFailedPacketEvent(this, packet, e));
+				handleException(new P4JServerClientException(e));
+			}
+
 		} catch (Exception e) {
-			server.dispatchEvent(new C2SReadPacketEvent(this, id, e));
+			server.dispatchEvent(new C2SReadFailedPacketEvent(this, id, e));
 			handleException(new P4JServerClientException(e));
 		}
 	}
@@ -134,18 +142,27 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			bb.put(content);
 			bb.flip();
 
-			synchronized (socketChannel) {
-				final int length = socketChannel.write(bb);
+			server.dispatchEvent(new S2CPreWritePacketEvent(this, packet, bb));
+			
+			try {
+				synchronized (socketChannel) {
+					final int length = socketChannel.write(bb);
+				}
+
+				server.dispatchEvent(new S2CPostWritePacketEvent(this, packet, bb));
+				return true;
+			} catch (Exception e) {
+				server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
+				handleException(new P4JServerClientException(e));
+				return false;
 			}
 
-			server.dispatchEvent(new S2CWritePacketEvent(this, packet, id));
-			return true;
 		} catch (ClosedChannelException e) {
 			server.dispatchEvent(new ClientDisconnectedEvent(e, this));
-			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
+			server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
 			return false;
 		} catch (Exception e) {
-			server.dispatchEvent(new S2CWritePacketEvent(this, packet, e));
+			server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
 			handleException(new P4JServerClientException(e));
 			return false;
 		}

@@ -14,6 +14,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.function.BiFunction;
 import java.util.function.Consumer;
 
 import javax.net.SocketFactory;
@@ -21,11 +22,15 @@ import javax.net.SocketFactory;
 import lu.pcy113.jbcodec.CodecManager;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.C2SWritePacketEvent;
-import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.ClientDisconnectedEvent;
 import lu.pcy113.p4j.events.P4JEvent;
-import lu.pcy113.p4j.events.S2CReadPacketEvent;
+import lu.pcy113.p4j.events.client.ClientConnectedEvent;
+import lu.pcy113.p4j.events.client.ClientDisconnectedEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SPostWritePacketEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SPreWritePacketEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SWriteFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CPostReadPacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CPreReadPacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CReadFailedPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.packets.PacketManager;
@@ -65,6 +70,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	private ClientServer clientServer;
 
 	private Consumer<P4JClientException> exceptionConsumer = (P4JClientException e) -> System.err.println(e.getMessage());
+
+	private BiFunction<P4JClient, InetSocketAddress, ClientServer> clientServerSupplier = (client, remoteInetSocketAddress) -> new ClientServer(remoteInetSocketAddress);
 
 	/**
 	 * 
@@ -134,8 +141,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			clientStatus = ClientStatus.LISTENING;
 
 			remoteInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getPort());
-			
-			clientServer = new ClientServer(remoteInetSocketAddress);
+
+			clientServer = clientServerSupplier.apply(this, remoteInetSocketAddress);
 
 			if (!super.isAlive()) {
 				super.start();
@@ -240,11 +247,18 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 
-			packet.clientRead(this, obj);
+			dispatchEvent(new S2CPreReadPacketEvent(this, packet, content));
 
-			dispatchEvent(new S2CReadPacketEvent(this, packet, packets.getClass(id)));
+			try {
+				packet.clientRead(this, obj);
+
+				dispatchEvent(new S2CPostReadPacketEvent(this, packet, content));
+			} catch (Exception e) {
+				dispatchEvent(new S2CReadFailedPacketEvent(this, packet, e));
+				handleException(new P4JClientException(e));
+			}
 		} catch (Exception e) {
-			dispatchEvent(new S2CReadPacketEvent(this, id, e));
+			dispatchEvent(new S2CReadFailedPacketEvent(this, id, e));
 			handleException(new P4JClientException(e));
 		}
 	}
@@ -267,28 +281,38 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			bb.put(content);
 			bb.flip();
 
-			synchronized (outputStream) {
-				if (bb.hasArray()) {
-					outputStream.write(bb.array());
-				} else {
-					outputStream.write(PCUtils.byteBufferToArray(bb));
+			dispatchEvent(new C2SPreWritePacketEvent(this, packet, bb));
+
+			try {
+				synchronized (outputStream) {
+					if (bb.hasArray()) {
+						outputStream.write(bb.array());
+					} else {
+						outputStream.write(PCUtils.byteBufferToArray(bb));
+					}
+
+					outputStream.flush();
 				}
 
-				outputStream.flush();
+				dispatchEvent(new C2SPostWritePacketEvent(this, packet, bb));
+
+				return true;
+			} catch (ClosedChannelException e) {
+				dispatchEvent(new ClientDisconnectedEvent(e, this));
+				close();
+				return false;
+			} catch (Exception e) {
+				dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
+				handleException(new P4JClientException(e));
+				return false;
 			}
 
-			dispatchEvent(new C2SWritePacketEvent(this, packet));
-
-			return true;
-		} catch (ClosedChannelException e) {
-			dispatchEvent(new ClientDisconnectedEvent(e, this));
-			close();
-			return false;
 		} catch (OutOfMemoryError e) {
+			dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
 			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
 			return false;
 		} catch (Exception e) {
-			dispatchEvent(new C2SWritePacketEvent(this, packet, e));
+			dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
 			handleException(new P4JClientException(e));
 			return false;
 		}
@@ -361,7 +385,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	public InetSocketAddress getLocalInetSocketAddress() {
 		return localInetSocketAddress;
 	}
-	
+
 	public InetSocketAddress getRemoteInetSocketAddress() {
 		return remoteInetSocketAddress;
 	}
@@ -431,6 +455,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public int getConnectionTimeout() {
 		return connectionTimeout;
+	}
+
+	public BiFunction<P4JClient, InetSocketAddress, ClientServer> getClientServerSupplier() {
+		return clientServerSupplier;
+	}
+
+	public void setClientServerSupplier(BiFunction<P4JClient, InetSocketAddress, ClientServer> clientServerSupplier) {
+		this.clientServerSupplier = clientServerSupplier;
 	}
 
 }

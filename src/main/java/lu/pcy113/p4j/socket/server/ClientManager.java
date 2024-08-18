@@ -8,7 +8,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 
-import lu.pcy113.p4j.events.ClientConnectedEvent;
+import lu.pcy113.p4j.events.client.ClientConnectedEvent;
 
 public class ClientManager {
 

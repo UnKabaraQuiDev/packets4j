@@ -8,10 +8,11 @@ import lu.pcy113.jbcodec.decoder.PairDecoder;
 import lu.pcy113.jbcodec.encoder.PairEncoder;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
-import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.ClientDisconnectedEvent;
+import lu.pcy113.p4j.events.client.ClientConnectedEvent;
+import lu.pcy113.p4j.events.client.ClientDisconnectedEvent;
 import lu.pcy113.p4j.socket.client.P4JClient;
 import lu.pcy113.p4j.socket.server.P4JServer;
+import lu.pcy113.pclib.listener.Event;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventHandler;
 import lu.pcy113.pclib.listener.EventListener;
@@ -37,6 +38,12 @@ public class EventMain {
 		public void onClosed(ClientDisconnectedEvent evt, EventManager em, EventDispatcher dispatcher) {
 			GlobalLogger.log(target + " socket closed: " + evt.getClient() + " from: " + dispatcher);
 		}
+
+		@EventHandler
+		public void onEventDispatched(Event evt, EventManager em, EventDispatcher dispatcher) {
+			System.err.println(target + " >> " + evt.getClass().getName());
+		}
+
 	}
 
 	@Test
@@ -74,7 +81,7 @@ public class EventMain {
 			GlobalLogger.info("client closed waiting for thread to end");
 			client.join();
 			GlobalLogger.info("client thread ended");
-			
+
 			server.disconnectAll();
 			GlobalLogger.info("server disconnected all clients");
 			server.close();

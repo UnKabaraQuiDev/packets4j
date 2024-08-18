@@ -1,8 +1,8 @@
 package catdog;
 
-import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.S2CReadPacketEvent;
-import lu.pcy113.p4j.events.S2CWritePacketEvent;
+import lu.pcy113.p4j.events.client.ClientConnectedEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CReadPacketEvent;
+import lu.pcy113.p4j.events.packets.s2c.S2CWritePacketEvent;
 import lu.pcy113.p4j.socket.server.ServerClient;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventHandler;
@@ -20,19 +20,19 @@ public class ServerEventListener implements EventListener {
 
 	@EventHandler
 	public void onClientWrite(S2CWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		if (((S2CWritePacketEvent) event).hasFailed()) {
-			GlobalLogger.info("Server ClientWritePacketEvent failed: " + ((S2CWritePacketEvent) event).getException() + " from: " + dispatcher);
+		if (event.hasFailed()) {
+			GlobalLogger.info("Server ClientWritePacketEvent failed: " + event.getException() + " from: " + dispatcher);
 		} else {
-			GlobalLogger.info("Server ClientWritePacketEvent: " + ((S2CWritePacketEvent) event).getPacket() + " from: " + dispatcher);
+			GlobalLogger.info("Server ClientWritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
 		}
 	}
 
 	@EventHandler
 	public void onClientRead(S2CReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		if (((S2CReadPacketEvent) event).hasFailed()) {
-			GlobalLogger.info("Server ClientReadPacketEvent failed: " + ((S2CReadPacketEvent) event).getException() + " from: " + dispatcher);
+		if (event.hasFailed()) {
+			GlobalLogger.info("Server ClientReadPacketEvent failed: " + event.getException() + " from: " + dispatcher);
 		} else {
-			GlobalLogger.info("Server ClientReadPacketEvent: " + ((S2CReadPacketEvent) event).getPacket() + " from: " + dispatcher);
+			GlobalLogger.info("Server ClientReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 		}
 	}
 

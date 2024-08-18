@@ -1,8 +1,10 @@
 package catdog;
 
-import lu.pcy113.p4j.events.ClientConnectedEvent;
-import lu.pcy113.p4j.events.S2CReadPacketEvent;
-import lu.pcy113.p4j.events.S2CWritePacketEvent;
+import lu.pcy113.p4j.events.client.ClientConnectedEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SReadFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.c2s.C2SWriteFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.post.PostReadPacketEvent;
+import lu.pcy113.p4j.events.packets.post.PostWritePacketEvent;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventHandler;
 import lu.pcy113.pclib.listener.EventListener;
@@ -17,21 +19,23 @@ public class ClientEventListener implements EventListener {
 	}
 
 	@EventHandler
-	public void onClientWrite(S2CWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		if (((S2CWritePacketEvent) event).hasFailed()) {
-			GlobalLogger.info("Client WritePacketEvent failed: " + ((S2CWritePacketEvent) event).getException() + " from: " + dispatcher);
-		} else {
-			GlobalLogger.info("Client WritePacketEvent: " + ((S2CWritePacketEvent) event).getPacket() + " from: " + dispatcher);
-		}
+	public void onClientWriteFailed(C2SWriteFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Client WritePacketEvent failed: " + event.getException() + " from: " + dispatcher);
 	}
 
 	@EventHandler
-	public void onClientRead(S2CReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		if (((S2CReadPacketEvent) event).hasFailed()) {
-			GlobalLogger.info("Client ReadPacketEvent failed: " + ((S2CReadPacketEvent) event).getException() + " from: " + dispatcher);
-		} else {
-			GlobalLogger.info("Client ReadPacketEvent: " + ((S2CReadPacketEvent) event).getPacket() + " from: " + dispatcher);
-		}
+	public void onClientWriteSuccess(PostWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Client WritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
+	}
+
+	@EventHandler
+	public void onClientReadFailed(C2SReadFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Client ReadPacketEvent failed: " + event.getException() + " from: " + dispatcher);
+	}
+
+	@EventHandler
+	public void onClientReadSuccess(PostReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Client ReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 }
