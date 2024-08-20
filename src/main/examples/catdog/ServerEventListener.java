@@ -22,22 +22,22 @@ public class ServerEventListener implements EventListener {
 	
 	@EventHandler
 	public void onServerWriteFailed(C2SWriteFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client WritePacketEvent failed: " + event.getException() + " from: " + dispatcher);
+		GlobalLogger.info("Server WritePacketEvent failed: " + event.getException() + " from: " + dispatcher);
 	}
 
 	@EventHandler
 	public void onServerWriteSuccess(PostWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client PostWritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
+		GlobalLogger.info("Server PostWritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 	@EventHandler
 	public void onServerReadFailed(C2SReadFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client ReadPacketEvent failed: " + event.getException() + " from: " + dispatcher);
+		GlobalLogger.info("Server ReadPacketEvent failed: " + event.getException() + " from: " + dispatcher);
 	}
 
 	@EventHandler
 	public void onServerReadSuccess(PostReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client PostReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
+		GlobalLogger.info("Server PostReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 }
