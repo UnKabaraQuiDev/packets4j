@@ -10,6 +10,7 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.SocketTimeoutException;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
@@ -90,9 +91,10 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	/**
 	 * Bind to a random available port on the local machine.
 	 * 
-	 * @throws IOException
+	 * @throws UnknownHostException
+	 * @throws P4JClientException
 	 */
-	public synchronized void bind() throws IOException {
+	public synchronized void bind() throws UnknownHostException {
 		bind(0);
 	}
 
@@ -100,9 +102,9 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
 	 * 
 	 * @param int the port to bind to
-	 * @throws IOException if the {@link Socket} cannot be created or bound
+	 * @throws P4JClientException
 	 */
-	public synchronized void bind(int port) throws IOException {
+	public synchronized void bind(int port) throws UnknownHostException {
 		bind(new InetSocketAddress(InetAddress.getByName("0.0.0.0"), port));
 	}
 
@@ -112,10 +114,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @param InetSocketAddress the local address to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
 	 */
-	public synchronized void bind(InetSocketAddress isa) throws IOException {
-		clientSocket = SocketFactory.getDefault().createSocket();
-		clientSocket.bind(isa);
-		clientStatus = ClientStatus.BOUND;
+	public synchronized void bind(InetSocketAddress isa) {
+		try {
+			clientSocket = SocketFactory.getDefault().createSocket();
+			clientSocket.bind(isa);
+			clientStatus = ClientStatus.BOUND;
+		} catch (IOException e) {
+			throw new P4JClientException(e);
+		}
 
 		this.localInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getLocalPort());
 		super.setName("P4JClient@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
@@ -128,7 +134,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * @param port   the remote port
 	 * @throws IOException if the {@link Socket} cannot be connected
 	 */
-	public synchronized void connect(InetAddress remote, int port) throws IOException {
+	public synchronized void connect(InetAddress remote, int port) {
 		if (!clientStatus.equals(ClientStatus.BOUND)) {
 			throw new P4JClientException("Client not bound");
 		}
@@ -150,16 +156,12 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			dispatchEvent(new ClientConnectedEvent(this, clientServer));
 		} catch (SocketTimeoutException e) {
-			close();
 			throw new P4JClientException("Connection timed out", e);
 		} catch (ConnectException e) {
-			close();
 			throw new P4JClientException("Connection refused", e);
 		} catch (SocketException e) {
-			close();
 			throw new P4JClientException(e);
 		} catch (IOException e) {
-			close();
 			throw new P4JClientException(e);
 		} catch (IllegalStateException e) {
 			close();
@@ -172,7 +174,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 * 
 	 * @see {@link #connect(InetAddress, int)}
 	 */
-	public synchronized void connect(InetSocketAddress isa) throws IOException {
+	public synchronized void connect(InetSocketAddress isa) {
 		this.connect(isa.getAddress(), isa.getPort());
 	}
 
@@ -399,6 +401,14 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 */
 	public int getPort() {
 		return (clientSocket != null ? clientSocket.getLocalPort() : -1);
+	}
+
+	public boolean isBound() {
+		return clientSocket.isBound();
+	}
+
+	public boolean isConnected() {
+		return clientSocket.isConnected();
 	}
 
 	public CodecManager getCodec() {
