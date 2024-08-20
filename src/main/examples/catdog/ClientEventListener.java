@@ -25,7 +25,7 @@ public class ClientEventListener implements EventListener {
 
 	@EventHandler
 	public void onClientWriteSuccess(PostWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client WritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
+		GlobalLogger.info("Client PostWritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 	@EventHandler
@@ -35,7 +35,7 @@ public class ClientEventListener implements EventListener {
 
 	@EventHandler
 	public void onClientReadSuccess(PostReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Client ReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
+		GlobalLogger.info("Client PostReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 }
