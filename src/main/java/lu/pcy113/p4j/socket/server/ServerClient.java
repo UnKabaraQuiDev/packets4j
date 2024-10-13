@@ -10,24 +10,28 @@ import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Consumer;
 
-import lu.pcy113.p4j.events.client.ClientDisconnectedEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SPostReadPacketEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SPreReadPacketEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SReadFailedPacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CPostWritePacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CPreWritePacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CWriteFailedPacketEvent;
+import lu.pcy113.p4j.P4JEndPoint;
+import lu.pcy113.p4j.events.client.P4JConnectionEvent.ClientDisconnectedEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.PreReadPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.PreWritePacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadSuccessPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteSuccessPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.exceptions.P4JServerClientException;
+import lu.pcy113.p4j.exceptions.PacketHandlingException;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
-import lu.pcy113.p4j.socket.P4JClientInstance;
+import lu.pcy113.p4j.socket.P4JInstance.P4JServerClientInstance;
 
 /**
- * Represents a P4JServer's client. This is a wrapper around a {@link SocketChannel} that represents a client connected to the server, on the server-side.
+ * Represents a P4JServer's client. This is a wrapper around a
+ * {@link SocketChannel} that represents a client connected to the server, on
+ * the server-side.
  */
-public class ServerClient implements P4JClientInstance, Closeable {
+public class ServerClient implements P4JServerClientInstance, Closeable {
 
 	protected ServerClientStatus serverClientStatus = ServerClientStatus.PRE;
 
@@ -55,7 +59,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 				final ByteBuffer bb = ByteBuffer.allocate(4);
 				final int bytesRead = socketChannel.read(bb);
 				if (bytesRead == -1) {
-					server.dispatchEvent(new ClientDisconnectedEvent(this));
+					server.dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.SERVER_CLIENT, server, this));
 					close();
 					return;
 				}
@@ -86,7 +90,7 @@ public class ServerClient implements P4JClientInstance, Closeable {
 		} catch (ClosedByInterruptException e) {
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException | SocketException e) {
-			server.dispatchEvent(new ClientDisconnectedEvent(e, this));
+			server.dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.SERVER_CLIENT, e, server, this));
 			close();
 		} catch (OutOfMemoryError e) {
 			handleException(new P4JServerClientException(e));
@@ -103,19 +107,19 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 			C2SPacket packet = (C2SPacket) server.getPackets().packetInstance(id);
 
-			server.dispatchEvent(new C2SPreReadPacketEvent(this, packet, content));
-			
+			server.dispatchEvent(new PreReadPacketEvent(P4JEndPoint.SERVER_CLIENT, this, packet, content));
+
 			try {
 				packet.serverRead(this, obj);
 
-				server.dispatchEvent(new C2SPostReadPacketEvent(this, packet, content));
+				server.dispatchEvent(new ReadSuccessPacketEvent(P4JEndPoint.SERVER_CLIENT, this, packet, content));
 			} catch (Exception e) {
-				server.dispatchEvent(new C2SReadFailedPacketEvent(this, packet, e));
+				server.dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.SERVER_CLIENT, this, e, packet, content));
 				handleException(new P4JServerClientException(e));
 			}
 
 		} catch (Exception e) {
-			server.dispatchEvent(new C2SReadFailedPacketEvent(this, id, e));
+			server.dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.SERVER_CLIENT, this, new PacketHandlingException(id, e), null, content));
 			handleException(new P4JServerClientException(e));
 		}
 	}
@@ -142,27 +146,27 @@ public class ServerClient implements P4JClientInstance, Closeable {
 			bb.put(content);
 			bb.flip();
 
-			server.dispatchEvent(new S2CPreWritePacketEvent(this, packet, bb));
-			
+			server.dispatchEvent(new PreWritePacketEvent(P4JEndPoint.SERVER_CLIENT, this, packet, bb));
+
 			try {
 				synchronized (socketChannel) {
 					final int length = socketChannel.write(bb);
 				}
 
-				server.dispatchEvent(new S2CPostWritePacketEvent(this, packet, bb));
+				server.dispatchEvent(new WriteSuccessPacketEvent(P4JEndPoint.SERVER_CLIENT, this, packet, bb));
 				return true;
 			} catch (Exception e) {
-				server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
+				server.dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.SERVER_CLIENT, this, e, packet, content));
 				handleException(new P4JServerClientException(e));
 				return false;
 			}
 
 		} catch (ClosedChannelException e) {
-			server.dispatchEvent(new ClientDisconnectedEvent(e, this));
-			server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
+			server.dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.SERVER_CLIENT, e, server, this));
+			server.dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.SERVER_CLIENT, this, e, packet, null));
 			return false;
 		} catch (Exception e) {
-			server.dispatchEvent(new S2CWriteFailedPacketEvent(this, packet, e));
+			server.dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.SERVER_CLIENT, this, e, packet, null));
 			handleException(new P4JServerClientException(e));
 			return false;
 		}
@@ -185,11 +189,12 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * And dispatches a {@link ClientDisconnectedEvent}.
 	 * 
 	 * @see #close()
-	 * @throws P4JClientException if the client socket is already closed or isn't started
+	 * @throws P4JClientException if the client socket is already closed or isn't
+	 *                            started
 	 */
 	public synchronized void disconnect() {
 		close();
-		server.dispatchEvent(new ClientDisconnectedEvent(this));
+		server.dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.SERVER_CLIENT, server, this));
 	}
 
 	/**
@@ -197,7 +202,8 @@ public class ServerClient implements P4JClientInstance, Closeable {
 	 * Doesn't dispatch a {@link ClientDisconnectedEvent}.
 	 * 
 	 * @see {@link #disconnect()}
-	 * @throws P4JClientException if the client socket is already closed or isn't started
+	 * @throws P4JClientException if the client socket is already closed or isn't
+	 *                            started
 	 */
 	@Override
 	public synchronized void close() {
@@ -237,6 +243,11 @@ public class ServerClient implements P4JClientInstance, Closeable {
 
 	public void setExceptionConsumer(Consumer<P4JServerClientException> exceptionConsumer) {
 		this.exceptionConsumer = exceptionConsumer;
+	}
+
+	@Override
+	public final P4JEndPoint getEndPoint() {
+		return P4JServerClientInstance.super.getEndPoint();
 	}
 
 	@Override

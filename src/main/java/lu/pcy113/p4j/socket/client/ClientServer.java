@@ -2,12 +2,13 @@ package lu.pcy113.p4j.socket.client;
 
 import java.net.InetSocketAddress;
 
-import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.p4j.P4JEndPoint;
+import lu.pcy113.p4j.socket.P4JInstance.P4JClientServerInstance;
 
 /**
  * Represents the server on the client-side.
  */
-public class ClientServer implements P4JServerInstance {
+public class ClientServer implements P4JClientServerInstance {
 
 	private InetSocketAddress remoteInetSocketAddress;
 
@@ -17,6 +18,11 @@ public class ClientServer implements P4JServerInstance {
 
 	public InetSocketAddress getRemoteInetSocketAddress() {
 		return remoteInetSocketAddress;
+	}
+
+	@Override
+	public final P4JEndPoint getEndPoint() {
+		return P4JClientServerInstance.super.getEndPoint();
 	}
 
 	@Override

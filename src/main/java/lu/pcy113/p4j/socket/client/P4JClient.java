@@ -21,24 +21,26 @@ import java.util.function.Consumer;
 import javax.net.SocketFactory;
 
 import lu.pcy113.jbcodec.CodecManager;
+import lu.pcy113.p4j.P4JEndPoint;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.P4JEvent;
-import lu.pcy113.p4j.events.client.ClientConnectedEvent;
-import lu.pcy113.p4j.events.client.ClientDisconnectedEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SPostWritePacketEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SPreWritePacketEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SWriteFailedPacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CPostReadPacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CPreReadPacketEvent;
-import lu.pcy113.p4j.events.packets.s2c.S2CReadFailedPacketEvent;
+import lu.pcy113.p4j.events.client.P4JConnectionEvent.ClientConnectedEvent;
+import lu.pcy113.p4j.events.client.P4JConnectionEvent.ClientDisconnectedEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.PreReadPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.PreWritePacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadSuccessPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteSuccessPacketEvent;
 import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
+import lu.pcy113.p4j.exceptions.PacketHandlingException;
+import lu.pcy113.p4j.exceptions.PacketWritingException;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
-import lu.pcy113.p4j.socket.P4JClientInstance;
-import lu.pcy113.p4j.socket.P4JInstance;
+import lu.pcy113.p4j.socket.P4JInstance.P4JClientInstance;
 import lu.pcy113.pclib.PCUtils;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
@@ -49,7 +51,7 @@ import lu.pcy113.pclib.listener.SyncEventManager;
  * 
  * @author pcy113
  */
-public class P4JClient extends Thread implements P4JInstance, P4JClientInstance, EventDispatcher, Closeable {
+public class P4JClient extends Thread implements P4JClientInstance, EventDispatcher, Closeable {
 
 	public static int MAX_PACKET_SIZE = 2048;
 
@@ -99,7 +101,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	}
 
 	/**
-	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
+	 * Bind to the specified port on the local machine. If the port is 0, a random
+	 * available port is chosen.
 	 * 
 	 * @param int the port to bind to
 	 * @throws P4JClientException
@@ -109,7 +112,8 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	}
 
 	/**
-	 * Bind to the specified port on the local machine. If the port is 0, a random available port is chosen.
+	 * Bind to the specified port on the local machine. If the port is 0, a random
+	 * available port is chosen.
 	 * 
 	 * @param InetSocketAddress the local address to bind to
 	 * @throws IOException if the {@link Socket} cannot be created or bound
@@ -154,7 +158,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 				super.start();
 			}
 
-			dispatchEvent(new ClientConnectedEvent(this, clientServer));
+			dispatchEvent(new ClientConnectedEvent(P4JEndPoint.CLIENT, this, clientServer));
 		} catch (SocketTimeoutException e) {
 			throw new P4JClientException("Connection timed out", e);
 		} catch (ConnectException e) {
@@ -194,7 +198,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 				final byte[] bb = new byte[4];
 				final int bytesRead = inputStream.read(bb);
 				if (bytesRead == -1) {
-					dispatchEvent(new ClientDisconnectedEvent(this));
+					dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.CLIENT, clientServer, this));
 					close();
 					return;
 				}
@@ -249,18 +253,18 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 			S2CPacket packet = (S2CPacket) packets.packetInstance(id);
 
-			dispatchEvent(new S2CPreReadPacketEvent(this, packet, content));
+			dispatchEvent(new PreReadPacketEvent(P4JEndPoint.CLIENT, this, packet, content));
 
 			try {
 				packet.clientRead(this, obj);
 
-				dispatchEvent(new S2CPostReadPacketEvent(this, packet, content));
+				dispatchEvent(new ReadSuccessPacketEvent(P4JEndPoint.CLIENT, this, packet, content));
 			} catch (Exception e) {
-				dispatchEvent(new S2CReadFailedPacketEvent(this, packet, e));
+				dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, content));
 				handleException(new P4JClientException(e));
 			}
 		} catch (Exception e) {
-			dispatchEvent(new S2CReadFailedPacketEvent(this, id, e));
+			dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.CLIENT, this, new PacketHandlingException(id, e), null, content));
 			handleException(new P4JClientException(e));
 		}
 	}
@@ -283,7 +287,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 			bb.put(content);
 			bb.flip();
 
-			dispatchEvent(new C2SPreWritePacketEvent(this, packet, bb));
+			dispatchEvent(new PreWritePacketEvent(P4JEndPoint.CLIENT, this, packet, bb));
 
 			try {
 				synchronized (outputStream) {
@@ -296,25 +300,25 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 					outputStream.flush();
 				}
 
-				dispatchEvent(new C2SPostWritePacketEvent(this, packet, bb));
+				dispatchEvent(new WriteSuccessPacketEvent(P4JEndPoint.CLIENT, this, packet, bb));
 
 				return true;
 			} catch (ClosedChannelException e) {
-				dispatchEvent(new ClientDisconnectedEvent(e, this));
+				dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.CLIENT, e, clientServer, this));
 				close();
 				return false;
 			} catch (Exception e) {
-				dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
+				dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, bb));
 				handleException(new P4JClientException(e));
 				return false;
 			}
 
 		} catch (OutOfMemoryError e) {
-			dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
-			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
+			dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, new PacketWritingException(packet, new P4JMaxPacketSizeExceeded(e)), packet, null));
+			handleException(new P4JClientException(new PacketWritingException(packet, new P4JMaxPacketSizeExceeded(e))));
 			return false;
 		} catch (Exception e) {
-			dispatchEvent(new C2SWriteFailedPacketEvent(this, packet, e));
+			dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, null));
 			handleException(new P4JClientException(e));
 			return false;
 		}
@@ -329,7 +333,7 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 	 */
 	public synchronized void disconnect() {
 		close();
-		dispatchEvent(new ClientDisconnectedEvent(this));
+		dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.CLIENT, clientServer, this));
 	}
 
 	/**
@@ -473,6 +477,11 @@ public class P4JClient extends Thread implements P4JInstance, P4JClientInstance,
 
 	public void setClientServerSupplier(BiFunction<P4JClient, InetSocketAddress, ClientServer> clientServerSupplier) {
 		this.clientServerSupplier = clientServerSupplier;
+	}
+
+	@Override
+	public final P4JEndPoint getEndPoint() {
+		return P4JClientInstance.super.getEndPoint();
 	}
 
 }

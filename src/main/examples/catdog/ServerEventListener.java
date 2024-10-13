@@ -1,10 +1,10 @@
 package catdog;
 
-import lu.pcy113.p4j.events.client.ClientConnectedEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SReadFailedPacketEvent;
-import lu.pcy113.p4j.events.packets.c2s.C2SWriteFailedPacketEvent;
-import lu.pcy113.p4j.events.packets.post.PostReadPacketEvent;
-import lu.pcy113.p4j.events.packets.post.PostWritePacketEvent;
+import lu.pcy113.p4j.events.client.P4JConnectionEvent.ClientConnectedEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.ReadSuccessPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteFailedPacketEvent;
+import lu.pcy113.p4j.events.packets.PacketEvent.WriteSuccessPacketEvent;
 import lu.pcy113.p4j.socket.server.ServerClient;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventHandler;
@@ -21,23 +21,23 @@ public class ServerEventListener implements EventListener {
 	}
 	
 	@EventHandler
-	public void onServerWriteFailed(C2SWriteFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Server WritePacketEvent failed: " + event.getException() + " from: " + dispatcher);
+	public void onServerWriteFailed(WriteFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Server WriteFailedPacketEvent failed: " + event.getException() + " from: " + dispatcher);
 	}
 
 	@EventHandler
-	public void onServerWriteSuccess(PostWritePacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Server PostWritePacketEvent: " + event.getPacket() + " from: " + dispatcher);
+	public void onServerWriteSuccess(WriteSuccessPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Server WriteSuccessPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 	@EventHandler
-	public void onServerReadFailed(C2SReadFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Server ReadPacketEvent failed: " + event.getException() + " from: " + dispatcher);
+	public void onServerReadFailed(ReadFailedPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Server ReadFailedPacketEvent failed: " + event.getException() + " from: " + dispatcher);
 	}
 
 	@EventHandler
-	public void onServerReadSuccess(PostReadPacketEvent event, EventManager em, EventDispatcher dispatcher) {
-		GlobalLogger.info("Server PostReadPacketEvent: " + event.getPacket() + " from: " + dispatcher);
+	public void onServerReadSuccess(ReadSuccessPacketEvent event, EventManager em, EventDispatcher dispatcher) {
+		GlobalLogger.info("Server ReadSuccessPacketEvent: " + event.getPacket() + " from: " + dispatcher);
 	}
 
 }

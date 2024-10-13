@@ -18,20 +18,20 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 
 import lu.pcy113.jbcodec.CodecManager;
+import lu.pcy113.p4j.P4JEndPoint;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.P4JEvent;
 import lu.pcy113.p4j.exceptions.P4JServerException;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
-import lu.pcy113.p4j.socket.P4JInstance;
-import lu.pcy113.p4j.socket.P4JServerInstance;
+import lu.pcy113.p4j.socket.P4JInstance.P4JServerInstance;
 import lu.pcy113.pclib.PCUtils;
 import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
 
-public class P4JServer extends Thread implements P4JInstance, P4JServerInstance, EventDispatcher, Closeable {
+public class P4JServer extends Thread implements P4JServerInstance, EventDispatcher, Closeable {
 
 	public static int MAX_PACKET_SIZE = 2048;
 
@@ -375,7 +375,12 @@ public class P4JServer extends Thread implements P4JInstance, P4JServerInstance,
 	public void setExceptionConsumer(Consumer<P4JServerException> exceptionConsumer) {
 		this.exceptionConsumer = exceptionConsumer;
 	}
-
+	
+	@Override
+	public final P4JEndPoint getEndPoint() {
+		return P4JServerInstance.super.getEndPoint();
+	}
+	
 	@Override
 	public String toString() {
 		return this.getClass().getName() + "#" + hashCode() + "@{local=" + localInetSocketAddress + ", status=" + serverStatus + ", thread=" + super.toString() + "}";
