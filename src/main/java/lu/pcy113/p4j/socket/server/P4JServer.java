@@ -15,7 +15,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.function.Predicate;
 
@@ -57,8 +56,6 @@ public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable,
 
 	private Function<Runnable, Thread> threadFactory = Thread::new;
 
-	private Consumer<P4JServerException> exceptionConsumer = P4JServerException::printStackTrace;
-
 	/**
 	 * Default constructor for a P4JServer, creates a default {@link ClientManager}
 	 * bound to this server instance.
@@ -72,7 +69,7 @@ public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable,
 		this.encryption = em;
 		this.compression = com;
 		this.clientManager = new ClientManager(this);
-		
+
 		this.packets.register(HeartbeatPacket.class, 0x00);
 
 		MAX_PACKET_SIZE = PCUtils.parseInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
@@ -153,19 +150,7 @@ public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable,
 			Thread.interrupted(); // clear interrupt flag
 			// ignore because triggered in #close()
 		} catch (Exception e) {
-			handleException(new P4JServerException(e));
-		}
-	}
-
-	/**
-	 * Handles the given exception in this server instance.<br>
-	 * It is strongly encouraged to override this method.
-	 * 
-	 * @param Exception the exception
-	 */
-	private void handleException(P4JServerException e) {
-		if (exceptionConsumer != null) {
-			exceptionConsumer.accept(e);
+			throw new P4JServerException(e);
 		}
 	}
 
@@ -292,10 +277,10 @@ public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable,
 			this.thread.interrupt();
 			serverSocketChannel.close();
 			serverStatus = ServerStatus.CLOSED;
-			
+
 			dispatchEvent(new ServerClosedEvent(this));
 		} catch (IOException e) {
-			handleException(new P4JServerException(e));
+			throw new P4JServerException(e);
 		}
 	}
 
@@ -413,14 +398,6 @@ public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable,
 
 	public void setEventManager(EventManager eventManager) {
 		this.eventManager = eventManager;
-	}
-
-	public Consumer<P4JServerException> getExceptionConsumer() {
-		return exceptionConsumer;
-	}
-
-	public void setExceptionConsumer(Consumer<P4JServerException> exceptionConsumer) {
-		this.exceptionConsumer = exceptionConsumer;
 	}
 
 	@Override

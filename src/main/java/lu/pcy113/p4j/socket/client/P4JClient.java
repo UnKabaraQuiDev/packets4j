@@ -17,7 +17,6 @@ import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.function.BiFunction;
-import java.util.function.Consumer;
 import java.util.function.Function;
 
 import javax.net.SocketFactory;
@@ -77,8 +76,6 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 	private ClientServer clientServer;
 
 	private Function<Runnable, Thread> threadFactory = Thread::new;
-
-	private Consumer<P4JClientException> exceptionConsumer = P4JClientException::printStackTrace;
 
 	private BiFunction<P4JClient, InetSocketAddress, ClientServer> clientServerSupplier = (client, remoteInetSocketAddress) -> new ClientServer(remoteInetSocketAddress);
 
@@ -220,8 +217,7 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 				final int length = PCUtils.byteToInt(bb);
 
 				if (length > MAX_PACKET_SIZE) {
-					handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(length)));
-					return;
+					throw new P4JClientException(new P4JMaxPacketSizeExceeded(length));
 				}
 
 				cc = new byte[length];
@@ -235,27 +231,26 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 
 			read_handleRawPacket(id, content);
 		} catch (NotYetConnectedException e) {
-			handleException(new P4JClientException(e));
+			throw new P4JClientException(e);
 		} catch (ClosedByInterruptException e) {
 			Thread.interrupted(); // clear interrupt flag
 			// ignore because triggered in #close()
 		} catch (ClosedChannelException e) {
 			// ignore because triggered in #close()
 		} catch (SocketException e) {
-			if (clientStatus.equals(ClientStatus.LISTENING)) {
-				handleException(new P4JClientException(e));
-			}
 			disconnect();
+			if (clientStatus.equals(ClientStatus.LISTENING)) {
+				throw new P4JClientException(e);
+			}
 		} catch (SocketTimeoutException e) {
 			// ignore
-			// disconnect();
 		} catch (OutOfMemoryError e) {
-			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
+			throw new P4JClientException(new P4JMaxPacketSizeExceeded(e));
 		} catch (IOException e) {
+			disconnect();
 			if (clientStatus.equals(ClientStatus.LISTENING)) {
-				handleException(new P4JClientException(e));
+				throw new P4JClientException(e);
 			}
-			close();
 		}
 	}
 
@@ -275,16 +270,26 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 				dispatchEvent(new ReadSuccessPacketEvent(P4JEndPoint.CLIENT, this, packet, content));
 			} catch (Exception e) {
 				dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, content));
-				handleException(new P4JClientException(e));
+				throw new P4JClientException(e);
 			}
 		} catch (Exception e) {
 			dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.CLIENT, this, new PacketHandlingException(id, e), null, content));
-			handleException(new P4JClientException(e));
+			throw new P4JClientException(e);
 		}
 	}
 
 	public boolean testConnection() {
-		return write(new HeartbeatPacket());
+		System.out.println(write(new HeartbeatPacket()));
+		try {
+			if (!write(new HeartbeatPacket())) {
+				close();
+				return false;
+			}
+			return true;
+		} catch (Exception e) {
+			e.printStackTrace();
+			return false;
+		}
 	}
 
 	public boolean write(C2SPacket packet) {
@@ -295,8 +300,7 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 			content = compression.compress(content);
 
 			if (content.remaining() + 3 * 4 > MAX_PACKET_SIZE) {
-				handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(content.remaining() + 3 * 4)));
-				return false;
+				throw new P4JClientException(new P4JMaxPacketSizeExceeded(content.remaining() + 3 * 4));
 			}
 
 			ByteBuffer bb = ByteBuffer.allocate(4 + 4 + content.capacity());
@@ -330,18 +334,15 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 				return false;
 			} catch (Exception e) {
 				dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, bb));
-				handleException(new P4JClientException(e));
-				return false;
+				throw new P4JClientException(e);
 			}
 
 		} catch (OutOfMemoryError e) {
 			dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, new PacketWritingException(packet, new P4JMaxPacketSizeExceeded(e)), packet, null));
-			handleException(new P4JClientException(new PacketWritingException(packet, new P4JMaxPacketSizeExceeded(e))));
-			return false;
+			throw new P4JClientException(new PacketWritingException(packet, new P4JMaxPacketSizeExceeded(e)));
 		} catch (Exception e) {
 			dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, null));
-			handleException(new P4JClientException(e));
-			return false;
+			throw new P4JClientException(e);
 		}
 	}
 
@@ -385,15 +386,8 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 			inputStream = null;
 			outputStream = null;
 		} catch (Exception e) {
-			handleException(new P4JClientException(e));
+			throw new P4JClientException(e);
 		}
-	}
-
-	private void handleException(P4JClientException e) {
-		if (exceptionConsumer != null) {
-			exceptionConsumer.accept(e);
-		}
-		close();
 	}
 
 	public void registerPacket(Class<?> p, int id) {
@@ -500,14 +494,6 @@ public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable,
 
 	public void setEventManager(EventManager eventManager) {
 		this.eventManager = eventManager;
-	}
-
-	public Consumer<P4JClientException> getExceptionConsumer() {
-		return exceptionConsumer;
-	}
-
-	public void setExceptionConsumer(Consumer<P4JClientException> exceptionConsumer) {
-		this.exceptionConsumer = exceptionConsumer;
 	}
 
 	public void setConnectionTimeout(int connectionTimeout) {

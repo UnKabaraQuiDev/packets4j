@@ -2,7 +2,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -19,18 +18,17 @@ import lu.pcy113.p4j.events.client.P4JConnectionEvent.ClientDisconnectedEvent;
 import lu.pcy113.p4j.events.server.ServerClosedEvent;
 import lu.pcy113.p4j.socket.client.P4JClient;
 import lu.pcy113.p4j.socket.server.P4JServer;
-import lu.pcy113.pclib.builder.ThreadBuilder;
 import lu.pcy113.pclib.listener.EventHandler;
 import lu.pcy113.pclib.listener.EventListener;
 
-public class P4JClientEventReconnectTest {
+public class P4JClientEventReconnectMain {
 
 	private P4JServer server;
 	private P4JClient client;
 	private InetSocketAddress serverAddress;
 
 	public static void main(String[] args) throws InterruptedException, IOException {
-		new P4JClientEventReconnectTest().run();
+		new P4JClientEventReconnectMain().run();
 	}
 
 	public void run() throws InterruptedException, IOException {
