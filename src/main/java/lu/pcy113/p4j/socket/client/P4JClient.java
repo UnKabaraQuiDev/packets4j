@@ -4,6 +4,7 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.lang.Thread.State;
 import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -17,6 +18,7 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.function.BiFunction;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import javax.net.SocketFactory;
 
@@ -37,6 +39,7 @@ import lu.pcy113.p4j.exceptions.P4JClientException;
 import lu.pcy113.p4j.exceptions.P4JMaxPacketSizeExceeded;
 import lu.pcy113.p4j.exceptions.PacketHandlingException;
 import lu.pcy113.p4j.exceptions.PacketWritingException;
+import lu.pcy113.p4j.packets.HeartbeatPacket;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.c2s.C2SPacket;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
@@ -51,7 +54,7 @@ import lu.pcy113.pclib.listener.SyncEventManager;
  * 
  * @author pcy113
  */
-public class P4JClient extends Thread implements P4JClientInstance, EventDispatcher, Closeable {
+public class P4JClient implements P4JClientInstance, EventDispatcher, Closeable, Runnable {
 
 	public static int MAX_PACKET_SIZE = 2048;
 
@@ -70,9 +73,12 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 	private InputStream inputStream;
 	private OutputStream outputStream;
 
+	private Thread thread;
 	private ClientServer clientServer;
 
-	private Consumer<P4JClientException> exceptionConsumer = (P4JClientException e) -> System.err.println(e.getMessage());
+	private Function<Runnable, Thread> threadFactory = Thread::new;
+
+	private Consumer<P4JClientException> exceptionConsumer = P4JClientException::printStackTrace;
 
 	private BiFunction<P4JClient, InetSocketAddress, ClientServer> clientServerSupplier = (client, remoteInetSocketAddress) -> new ClientServer(remoteInetSocketAddress);
 
@@ -86,6 +92,8 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 		this.codec = cm;
 		this.encryption = em;
 		this.compression = com;
+
+		this.packets.register(HeartbeatPacket.class, 0x00);
 
 		MAX_PACKET_SIZE = PCUtils.parseInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
@@ -121,6 +129,7 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 	public synchronized void bind(InetSocketAddress isa) {
 		try {
 			clientSocket = SocketFactory.getDefault().createSocket();
+			clientSocket.setKeepAlive(true);
 			clientSocket.bind(isa);
 			clientStatus = ClientStatus.BOUND;
 		} catch (IOException e) {
@@ -128,7 +137,9 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 		}
 
 		this.localInetSocketAddress = new InetSocketAddress(clientSocket.getInetAddress(), clientSocket.getLocalPort());
-		super.setName("P4JClient@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
+
+		this.thread = threadFactory.apply(this);
+		this.thread.setName("P4JClient@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
 	}
 
 	/**
@@ -154,8 +165,8 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 
 			clientServer = clientServerSupplier.apply(this, remoteInetSocketAddress);
 
-			if (!super.isAlive()) {
-				super.start();
+			if (!this.thread.isAlive()) {
+				this.thread.start();
 			}
 
 			dispatchEvent(new ClientConnectedEvent(P4JEndPoint.CLIENT, this, clientServer));
@@ -190,7 +201,7 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 		// clientStatus = ClientStatus.CLOSED;
 	}
 
-	public void read() {
+	protected void read() {
 		try {
 			final byte[] cc;
 
@@ -234,14 +245,17 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 			if (clientStatus.equals(ClientStatus.LISTENING)) {
 				handleException(new P4JClientException(e));
 			}
+			disconnect();
 		} catch (SocketTimeoutException e) {
-			// ignore, just return
+			// ignore
+			// disconnect();
 		} catch (OutOfMemoryError e) {
 			handleException(new P4JClientException(new P4JMaxPacketSizeExceeded(e)));
 		} catch (IOException e) {
 			if (clientStatus.equals(ClientStatus.LISTENING)) {
 				handleException(new P4JClientException(e));
 			}
+			close();
 		}
 	}
 
@@ -267,6 +281,10 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 			dispatchEvent(new ReadFailedPacketEvent(P4JEndPoint.CLIENT, this, new PacketHandlingException(id, e), null, content));
 			handleException(new P4JClientException(e));
 		}
+	}
+
+	public boolean testConnection() {
+		return write(new HeartbeatPacket());
 	}
 
 	public boolean write(C2SPacket packet) {
@@ -306,6 +324,9 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 			} catch (ClosedChannelException e) {
 				dispatchEvent(new ClientDisconnectedEvent(P4JEndPoint.CLIENT, e, clientServer, this));
 				close();
+				return false;
+			} catch (SocketException e) {
+				disconnect();
 				return false;
 			} catch (Exception e) {
 				dispatchEvent(new WriteFailedPacketEvent(P4JEndPoint.CLIENT, this, e, packet, bb));
@@ -353,7 +374,7 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 
 		try {
 			clientStatus = ClientStatus.CLOSING;
-			this.interrupt();
+			this.thread.interrupt();
 			if (clientSocket != null) {
 				clientSocket.close();
 			}
@@ -361,6 +382,8 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 
 			clientSocket = null;
 			clientServer = null;
+			inputStream = null;
+			outputStream = null;
 		} catch (Exception e) {
 			handleException(new P4JClientException(e));
 		}
@@ -382,6 +405,30 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 			return;
 
 		eventManager.dispatch(event, this);
+	}
+
+	// ----- thread delegated methods
+
+	public final void join() throws InterruptedException {
+		this.thread.join();
+	}
+
+	public final void join(long millis, int nanos) throws InterruptedException {
+		thread.join(millis, nanos);
+	}
+
+	public final void join(long millis) throws InterruptedException {
+		thread.join(millis);
+	}
+
+	// ----- thread delegated methods
+
+	public State getState() {
+		return thread.getState();
+	}
+
+	public final boolean isAlive() {
+		return thread.isAlive();
 	}
 
 	public ClientStatus getClientStatus() {
@@ -412,7 +459,7 @@ public class P4JClient extends Thread implements P4JClientInstance, EventDispatc
 	}
 
 	public boolean isConnected() {
-		return clientSocket.isConnected();
+		return clientSocket != null && clientSocket.isConnected() && !clientSocket.isClosed();
 	}
 
 	public CodecManager getCodec() {

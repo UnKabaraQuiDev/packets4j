@@ -2,7 +2,9 @@ package lu.pcy113.p4j.socket.server;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.lang.Thread.State;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.ClosedByInterruptException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
@@ -22,7 +24,9 @@ import lu.pcy113.p4j.P4JEndPoint;
 import lu.pcy113.p4j.compress.CompressionManager;
 import lu.pcy113.p4j.crypto.EncryptionManager;
 import lu.pcy113.p4j.events.P4JEvent;
+import lu.pcy113.p4j.events.server.ServerClosedEvent;
 import lu.pcy113.p4j.exceptions.P4JServerException;
+import lu.pcy113.p4j.packets.HeartbeatPacket;
 import lu.pcy113.p4j.packets.PacketManager;
 import lu.pcy113.p4j.packets.s2c.S2CPacket;
 import lu.pcy113.p4j.socket.P4JInstance.P4JServerInstance;
@@ -31,7 +35,7 @@ import lu.pcy113.pclib.listener.EventDispatcher;
 import lu.pcy113.pclib.listener.EventManager;
 import lu.pcy113.pclib.listener.SyncEventManager;
 
-public class P4JServer extends Thread implements P4JServerInstance, EventDispatcher, Closeable {
+public class P4JServer implements P4JServerInstance, EventDispatcher, Closeable, Runnable {
 
 	public static int MAX_PACKET_SIZE = 2048;
 
@@ -47,13 +51,17 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 
 	private InetSocketAddress localInetSocketAddress;
 
+	private Thread thread;
 	private ServerSocketChannel serverSocketChannel;
 	private Selector serverSocketSelector;
 
-	private Consumer<P4JServerException> exceptionConsumer = (P4JServerException e) -> System.err.println(e.getMessage());
+	private Function<Runnable, Thread> threadFactory = Thread::new;
+
+	private Consumer<P4JServerException> exceptionConsumer = P4JServerException::printStackTrace;
 
 	/**
-	 * Default constructor for a P4JServer, creates a default {@link ClientManager} bound to this server instance.
+	 * Default constructor for a P4JServer, creates a default {@link ClientManager}
+	 * bound to this server instance.
 	 * 
 	 * @param CodecManager       the server codec manager
 	 * @param EntryptionManager  the server encryption manager
@@ -64,35 +72,43 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 		this.encryption = em;
 		this.compression = com;
 		this.clientManager = new ClientManager(this);
+		
+		this.packets.register(HeartbeatPacket.class, 0x00);
 
 		MAX_PACKET_SIZE = PCUtils.parseInteger(System.getProperty("P4J_maxPacketSize"), MAX_PACKET_SIZE);
 	}
 
 	/*
-	 * public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager com, ClientManager clientManager) { this.codec = cm; this.encryption = em; this.compression = com; this.clientManager = clientManager; }
+	 * public P4JServer(CodecManager cm, EncryptionManager em, CompressionManager
+	 * com, ClientManager clientManager) { this.codec = cm; this.encryption = em;
+	 * this.compression = com; this.clientManager = clientManager; }
 	 */
 
 	/**
 	 * Binds the current server to the local address.
 	 * 
 	 * @param InetSocketAddress the local address to bind to
-	 * @throws IOException        if the {@link ServerSocketChannel} or {@link Selector} cannot be opened or bound
+	 * @throws IOException        if the {@link ServerSocketChannel} or
+	 *                            {@link Selector} cannot be opened or bound
 	 * @throws P4JServerException if the server is already bound
 	 */
 	public synchronized void bind(InetSocketAddress isa) throws IOException {
-		if (!serverStatus.equals(ServerStatus.PRE)) {
-			throw new P4JServerException("Server already bound");
+		if (!(serverStatus.equals(ServerStatus.PRE) || serverStatus.equals(ServerStatus.CLOSED))) {
+			throw new P4JServerException("Server already bound.");
 		}
 
 		serverSocketSelector = Selector.open();
 		serverSocketChannel = ServerSocketChannel.open();
+		serverSocketChannel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
 		serverSocketChannel.socket().bind(isa);
 		serverSocketChannel.configureBlocking(false);
 		serverSocketChannel.register(serverSocketSelector, SelectionKey.OP_ACCEPT);
 		serverStatus = ServerStatus.BOUND;
 
 		this.localInetSocketAddress = new InetSocketAddress(serverSocketChannel.socket().getInetAddress(), serverSocketChannel.socket().getLocalPort());
-		super.setName("P4JServer@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
+
+		this.thread = threadFactory.apply(this);
+		this.thread.setName("P4JServer@" + localInetSocketAddress.getHostString() + ":" + localInetSocketAddress.getPort());
 	}
 
 	public void run() {
@@ -191,7 +207,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 	}
 
 	/**
-	 * Iterates over all the connected clients and sends the specified packet if the predicate's condition is met.
+	 * Iterates over all the connected clients and sends the specified packet if the
+	 * predicate's condition is met.
 	 */
 	public synchronized void broadcastIf(S2CPacket<?> packet, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packet);
@@ -204,7 +221,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 	}
 
 	/**
-	 * Iterates over all the connected clients and sends the specified packet(s) if the predicate's condition is met.
+	 * Iterates over all the connected clients and sends the specified packet(s) if
+	 * the predicate's condition is met.
 	 */
 	public synchronized void broadcastIf(List<S2CPacket<?>> packets, Predicate<ServerClient> condition) {
 		Objects.requireNonNull(packets);
@@ -223,7 +241,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 	}
 
 	/**
-	 * Iterates over all the connected clients and sends the packet provided by the supplier, if the predicate's condition is met.
+	 * Iterates over all the connected clients and sends the packet provided by the
+	 * supplier, if the predicate's condition is met.
 	 */
 	public synchronized void broadcastIf(Function<ServerClient, S2CPacket<?>> packetSupplier, Predicate<ServerClient> condition) {
 		for (ServerClient sc : clientManager.getAllClients()) {
@@ -245,8 +264,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 
 		serverStatus = ServerStatus.ACCEPTING;
 
-		if (!super.isAlive()) {
-			super.start();
+		if (!this.thread.isAlive()) {
+			this.thread.start();
 		}
 	}
 
@@ -258,7 +277,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 
 	/**
 	 * Closes the server socket.<br>
-	 * The server will no longer accept new client connections, all clients will be forcefully disconnected and the local port is released.
+	 * The server will no longer accept new client connections, all clients will be
+	 * forcefully disconnected and the local port is released.
 	 * 
 	 * @throws P4JServerException if the server socket is already closed
 	 */
@@ -269,9 +289,11 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 
 		try {
 			serverStatus = ServerStatus.CLOSING;
-			this.interrupt();
+			this.thread.interrupt();
 			serverSocketChannel.close();
 			serverStatus = ServerStatus.CLOSED;
+			
+			dispatchEvent(new ServerClosedEvent(this));
 		} catch (IOException e) {
 			handleException(new P4JServerException(e));
 		}
@@ -279,7 +301,8 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 
 	/**
 	 * Sets the server socket in client refuse mode.<br>
-	 * The server will refuse all future incoming client connections but keep current connections alive.
+	 * The server will refuse all future incoming client connections but keep
+	 * current connections alive.
 	 * 
 	 * @throws P4JServerException if the server socket is closed.
 	 */
@@ -299,6 +322,30 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 			return;
 
 		eventManager.dispatch(event, this);
+	}
+
+	// ----- thread delegated methods
+
+	public final void join() throws InterruptedException {
+		thread.join();
+	}
+
+	public final void join(long millis, int nanos) throws InterruptedException {
+		thread.join(millis, nanos);
+	}
+
+	public final void join(long millis) throws InterruptedException {
+		thread.join(millis);
+	}
+
+	// ----- thread delegated methods
+
+	public State getState() {
+		return thread.getState();
+	}
+
+	public final boolean isAlive() {
+		return thread.isAlive();
 	}
 
 	public ServerStatus getServerStatus() {
@@ -375,12 +422,12 @@ public class P4JServer extends Thread implements P4JServerInstance, EventDispatc
 	public void setExceptionConsumer(Consumer<P4JServerException> exceptionConsumer) {
 		this.exceptionConsumer = exceptionConsumer;
 	}
-	
+
 	@Override
 	public final P4JEndPoint getEndPoint() {
 		return P4JServerInstance.super.getEndPoint();
 	}
-	
+
 	@Override
 	public String toString() {
 		return this.getClass().getName() + "#" + hashCode() + "@{local=" + localInetSocketAddress + ", status=" + serverStatus + ", thread=" + super.toString() + "}";

@@ -6,7 +6,7 @@
 
 	<groupId>lu.pcy113</groupId>
 	<artifactId>packets4j</artifactId>
-	<version>0.8.1</version>
+	<version>0.8.2</version>
 	<packaging>jar</packaging>
 
 	<name>Packets4J</name>
